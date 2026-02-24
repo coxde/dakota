@@ -8,7 +8,6 @@ on:
 env:
   IMAGE_NAME: egg
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
-  BST2_IMAGE: registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:f89b4aef847ef040b345acceda15a850219eb8f1
 
 # Only one build at a time. If a manual dispatch arrives while a scheduled
 # build is running, the in-progress run is cancelled.
@@ -25,10 +24,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-
-      - name: Pull BuildStream container image
-        run: podman pull "$BST2_IMAGE"
 
       - name: Mount BuildStream cache (sticky disk)
         uses: useblacksmith/stickydisk@v1
