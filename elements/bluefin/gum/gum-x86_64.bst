@@ -1,6 +1,6 @@
 kind: manual
 
-(@): elements/bluefin/gum.inc
+(@): elements/bluefin/gum/gum.inc
 
 sources:
   - kind: tar

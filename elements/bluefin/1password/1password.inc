@@ -1,13 +1,6 @@
-kind: manual
-
 build-depends:
   - freedesktop-sdk.bst:public-stacks/runtime-minimal.bst
   - freedesktop-sdk.bst:components/sed.bst
-
-sources:
-  - kind: tar
-    url: onepassword_files:linux/tar/stable/x86_64/1password-8.12.2.x64.tar.gz
-    ref: bc9f86c108e50c29faef6dead7eff115416437d5e323dff47827ed9984204b5b
 
 variables:
   strip-binaries: ""

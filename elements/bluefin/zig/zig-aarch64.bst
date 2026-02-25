@@ -1,6 +1,6 @@
 kind: manual
 
-(@): elements/bluefin/zig.inc
+(@): elements/bluefin/zig/zig.inc
 
 sources:
   - kind: tar

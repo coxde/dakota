@@ -1,6 +1,6 @@
 kind: manual
 
-(@): elements/bluefin/brew-tarball.inc
+(@): elements/bluefin/brew-tarball/brew-tarball.inc
 
 sources:
   - kind: remote

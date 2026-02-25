@@ -3,7 +3,7 @@ kind: stack
 (?):
 - arch == "x86_64":
     depends:
-      - bluefin/gum-x86_64.bst
+      - bluefin/gum/gum-x86_64.bst
 - arch == "aarch64":
     depends:
-      - bluefin/gum-aarch64.bst
+      - bluefin/gum/gum-aarch64.bst

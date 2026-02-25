@@ -1,6 +1,6 @@
 kind: manual
 
-(@): elements/bluefin/fzf.inc
+(@): elements/bluefin/fzf/fzf.inc
 
 sources:
   - kind: tar

@@ -1,6 +1,6 @@
 kind: manual
 
-(@): elements/bluefin/glow.inc
+(@): elements/bluefin/glow/glow.inc
 
 sources:
   - kind: tar
