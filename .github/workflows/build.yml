@@ -203,7 +203,7 @@ jobs:
 
       - name: Build OCI image with BuildStream
         env:
-          BST_FLAGS: --no-interactive --config /src/buildstream-ci.conf
+          BST_FLAGS: -o x86_64_v3 true --no-interactive --config /src/buildstream-ci.conf
         run: |
           just bst build ${{ matrix.element }}
         timeout-minutes: 420
