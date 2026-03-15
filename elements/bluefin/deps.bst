@@ -10,8 +10,8 @@ depends:
 
   - bluefin/tailscale/tailscale.bst
 
-  - bluefin/1password-cli/1password-cli.bst
-  - bluefin/1password/1password.bst
+  - bluefin/1password-cli.bst
+  - bluefin/1password.bst
 
   - bluefin/ghostty.bst
 
