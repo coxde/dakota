@@ -3,7 +3,7 @@
 
 [Bluefin's](https://projectbluefin.io) final form. 
 
-`projectbluefin/dakota` is built on [GNOME OS](https://os.gnome.org/) using [BuildStream](https://buildstream.build/). This is a prototype and not ready and may bite.
+`projectbluefin/dakota` is built on [GNOME OS](https://os.gnome.org/) using [BuildStream](https://buildstream.build/) and then published as a bootc container.
 
 <a href="https://docs.projectbluefin.io/changelogs">
   <picture>
