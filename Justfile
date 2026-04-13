@@ -477,16 +477,24 @@ chunkify image_ref:
     #   good layer reuse. See https://github.com/coreos/chunkah#compatibility-with-bootable-bootc-images
     # --prune /sysroot/: exclude OSTree object store content (poor chunking target);
     #   safe no-op if /sysroot is absent in this BuildStream-built image.
-    # -t: embed the tag in index.json so podman load tags the image automatically
-    #   (avoids parsing load output + podman tag; requires chunkah post-v0.3.2/latest).
-    $SUDO_CMD podman run --rm \
+    LOADED=$($SUDO_CMD podman run --rm \
         --security-opt label=type:unconfined_t \
         --mount=type=image,src="{{image_ref}}",dst=/chunkah \
         -e "CHUNKAH_CONFIG_STR=$CONFIG" \
         quay.io/coreos/chunkah build \
             --max-layers 128 \
-            --prune /sysroot/ \
-            -t "{{image_ref}}" | $SUDO_CMD podman load
+            --prune /sysroot/ | $SUDO_CMD podman load)
+
+    echo "$LOADED"
+
+    # Parse the loaded image reference and retag to original name
+    NEW_REF=$(echo "$LOADED" | grep -oP '(?<=Loaded image: ).*' || \
+              echo "$LOADED" | grep -oP '(?<=Loaded image\(s\): ).*')
+
+    if [ -n "$NEW_REF" ] && [ "$NEW_REF" != "{{image_ref}}" ]; then
+        echo "==> Retagging chunked image to {{image_ref}}..."
+        $SUDO_CMD podman tag "$NEW_REF" "{{image_ref}}"
+    fi
 
     echo "==> Chunkify complete. Image reloaded as {{image_ref}}"
 
