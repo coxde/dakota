@@ -19,6 +19,7 @@ public:
     overlap-whitelist:
     - /etc/environment
     - /etc/containers/policy.json
+    - /usr/share/pixmaps/gnome-boot-logo.png
 
 variables:
   strip-binaries: ""
@@ -37,6 +38,14 @@ config:
     cp -r system_files/bluefin/etc/./ "%{install-root}%{sysconfdir}/"
     cp -r system_files/shared/etc/./ "%{install-root}%{sysconfdir}/"
     cp -r bluefin-branding/system_files/etc/./ "%{install-root}%{sysconfdir}/"
+
+    # Map Bluefin icons to GNOME OS expected names
+    # About dialog (gnome-control-center reads LOGO=img-logo-icon from os-release,
+    # then looks for img-logo-icon-text-dark, img-logo-icon-text, img-logo-icon-dark, img-logo-icon)
+    cp "%{install-root}%{datadir}/pixmaps/fedora-logo-icon.png" "%{install-root}%{datadir}/pixmaps/img-logo-icon.png"
+    cp "%{install-root}%{datadir}/pixmaps/fedora-logo-icon.png" "%{install-root}%{datadir}/pixmaps/img-logo-icon-dark.png"
+    # Override GNOME OS boot logo with Bluefin branding
+    cp "%{install-root}%{datadir}/pixmaps/fedora-gdm-logo.png" "%{install-root}%{datadir}/pixmaps/gnome-boot-logo.png"
 
     # Create dconf profile so the distro system database is read
     mkdir -p "%{install-root}%{sysconfdir}/dconf/profile"
