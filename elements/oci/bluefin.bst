@@ -10,6 +10,9 @@ build-depends:
   - filename: gnome-build-meta.bst:oci/gnomeos/image.bst
     config:
       location: /parent
+  - filename: oci/chunkah-filemap.bst
+    config:
+      location: /chunkah-data
   - filename: oci/layers/bluefin.bst
     config:
       location: /layer
@@ -49,6 +52,12 @@ config:
 
     - |
       dconf update /layer/etc/dconf/db
+
+    - |
+      install -Dm0644 /chunkah-data/usr/lib/chunkah/fakecap-manifest.tsv \
+        /layer/usr/lib/chunkah/fakecap-manifest.tsv
+      install -Dm0755 /chunkah-data/usr/lib/chunkah/fakecap-restore \
+        /layer/usr/lib/chunkah/fakecap-restore
 
     - |
       cd "%{install-root}"
