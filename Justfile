@@ -32,7 +32,6 @@ bst *ARGS:
     #!/usr/bin/env bash
     set -euo pipefail
     mkdir -p "${HOME}/.cache/buildstream"
-    VERSION_ID_OPT="--option version-id $(date +%Y%m%d)"
     # BST_FLAGS env var allows CI to inject --no-interactive, --config, etc.
     # Word-splitting is intentional here (flags are space-separated).
     # shellcheck disable=SC2086
@@ -44,7 +43,7 @@ bst *ARGS:
         -v "${HOME}/.cache/buildstream:/root/.cache/buildstream:rw" \
         -w /src \
         "{{bst2_image}}" \
-        bash -c 'bst --colors "$@"' -- ${BST_FLAGS:-} ${VERSION_ID_OPT} {{ARGS}}
+        bash -c 'bst --colors "$@"' -- ${BST_FLAGS:-} {{ARGS}}
 
 # ── Build ─────────────────────────────────────────────────────────────
 # Build the OCI image and load it into podman.
@@ -100,9 +99,12 @@ export:
         LABEL_ARGS="${LABEL_ARGS} --label org.opencontainers.image.version=${OCI_IMAGE_VERSION}"
     fi
     
-    # Squash and apply dynamic labels
+    # Squash, inject build-date VERSION_ID, and apply dynamic labels.
+    # BST has no string option type, so VERSION_ID is set to "0" in os-release.bst
+    # and replaced here at export time — after the BST cache key is already fixed.
+    DATE_TAG="$(date -u +%Y%m%d)"
     # shellcheck disable=SC2086
-    printf 'FROM %s\n' "$IMAGE_ID" \
+    printf 'FROM %s\nRUN sed -i "s/^VERSION_ID=.*/VERSION_ID=\\"%s\\"/" /usr/lib/os-release\n' "$IMAGE_ID" "$DATE_TAG" \
         | $SUDO_CMD podman build --pull=never --security-opt label=type:unconfined_t --squash-all ${LABEL_ARGS} -t "{{image_name}}:{{image_tag}}" -f - .
     $SUDO_CMD podman rmi "$IMAGE_ID" || true
 
