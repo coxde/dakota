@@ -14,7 +14,7 @@ environment:
   IMAGE_REF: "ostree-image-signed:docker://ghcr.io/projectbluefin/dakota"
   IMAGE_FLAVOR: "main"
   IMAGE_TAG: "latest"
-  VERSION_ID: "%{version-id}"
+  VERSION_ID: "0"
 
   IMAGE_PRETTY_NAME: "Bluefin"
   HOME_URL: "https://projectbluefin.io"
