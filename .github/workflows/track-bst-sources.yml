@@ -143,13 +143,26 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         id: changes
         run: |
+          BST_PATH="elements/${{ matrix.element }}"
           if git diff --quiet; then
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
             echo "No changes detected for ${{ matrix.element }}"
           else
-            echo "has_changes=true" >> "$GITHUB_OUTPUT"
-            echo "Changes detected:"
-            git diff --stat
+            # bst source track can normalize ref format without changing the underlying
+            # commit (e.g. plain SHA -> git-describe "v0.2.13-0-g<sha>").
+            # Compare the set of terminal 40-char hex SHAs from ref: lines in both
+            # the old (HEAD) and new (working tree) file states.  If the sets are
+            # identical, only formatting changed — no real update, skip the PR.
+            OLD_SHAS=$(git show "HEAD:$BST_PATH" | grep -oP '^\s*ref:\s+\K\S+' | grep -oP '[0-9a-f]{40}$' | sort)
+            NEW_SHAS=$(grep -oP '^\s*ref:\s+\K\S+' "$BST_PATH" | grep -oP '[0-9a-f]{40}$' | sort)
+            if [ -n "$OLD_SHAS" ] && [ "$OLD_SHAS" = "$NEW_SHAS" ]; then
+              echo "has_changes=false" >> "$GITHUB_OUTPUT"
+              echo "Ref format normalized but same underlying commit(s) — no update, skipping PR"
+            else
+              echo "has_changes=true" >> "$GITHUB_OUTPUT"
+              echo "Changes detected:"
+              git diff --stat
+            fi
           fi
 
       - name: Create PR
