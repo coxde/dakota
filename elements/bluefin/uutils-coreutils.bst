@@ -9,6 +9,11 @@ config:
   - |
     for prog in $(target/release/coreutils --list); do
       ln -sr "%{install-root}/usr/bin/uutils-coreutils" "%{install-root}/usr/bin/uutils-${prog}"
+      # Keep cp/mv/rm from GNU coreutils — uutils has unresolved TOCTOU issues.
+      # See projectbluefin/common#290.
+      case "${prog}" in
+        cp|mv|rm) continue ;;
+      esac
       ln -sr "%{install-root}/usr/bin/uutils-coreutils" "%{install-root}/usr/bin/${prog}"
     done
 
@@ -29,7 +34,6 @@ public:
     - /usr/bin/chroot
     - /usr/bin/cksum
     - /usr/bin/comm
-    - /usr/bin/cp
     - /usr/bin/csplit
     - /usr/bin/cut
     - /usr/bin/date
@@ -65,7 +69,6 @@ public:
     - /usr/bin/mknod
     - /usr/bin/mktemp
     - /usr/bin/more
-    - /usr/bin/mv
     - /usr/bin/nice
     - /usr/bin/nl
     - /usr/bin/nohup
@@ -82,7 +85,6 @@ public:
     - /usr/bin/pwd
     - /usr/bin/readlink
     - /usr/bin/realpath
-    - /usr/bin/rm
     - /usr/bin/rmdir
     - /usr/bin/seq
     - /usr/bin/sha1sum
