@@ -20,4 +20,4 @@ config:
     ::1         localhost
     EOF
 
-  - "%{install-extra}"
+
