@@ -87,6 +87,10 @@ jobs:
             element: bluefin/xdg-terminal-exec.bst
             branch: auto/track-xdg-terminal-exec
             title: "chore(deps): update xdg-terminal-exec"
+          - group: auto-merge
+            element: bluefin/nautilus-python.bst
+            branch: auto/track-nautilus-python
+            title: "chore(deps): update nautilus-python"
           # ── manual-merge: core junctions ──
           - group: manual-merge
             element: gnome-build-meta.bst
