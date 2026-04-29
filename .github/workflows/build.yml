@@ -119,7 +119,7 @@ jobs:
             - url: https://cache.projectbluefin.io:11002
               push: true
               connection-config:
-                keepalive-time: 60
+                keepalive-time: 180
                 retry-limit: 5
                 retry-delay: 1000
                 request-timeout: 180
@@ -132,7 +132,7 @@ jobs:
             - url: https://cache.projectbluefin.io:11002
               push: true
               connection-config:
-                keepalive-time: 60
+                keepalive-time: 180
                 retry-limit: 5
                 retry-delay: 1000
                 request-timeout: 180
@@ -144,7 +144,7 @@ jobs:
             storage-service:
               url: https://cache.projectbluefin.io:11002
               connection-config:
-                keepalive-time: 60
+                keepalive-time: 180
                 retry-limit: 5
                 retry-delay: 1000
                 request-timeout: 180
@@ -156,7 +156,7 @@ jobs:
             execution-service:
               url: https://cache.projectbluefin.io:11002
               connection-config:
-                keepalive-time: 60
+                keepalive-time: 180
                 retry-limit: 5
                 retry-delay: 1000
                 request-timeout: 180
@@ -166,7 +166,7 @@ jobs:
             action-cache-service:
               url: https://cache.projectbluefin.io:11002
               connection-config:
-                keepalive-time: 60
+                keepalive-time: 180
                 retry-limit: 5
                 retry-delay: 1000
                 request-timeout: 180
@@ -347,7 +347,7 @@ jobs:
             - url: https://cache.projectbluefin.io:11002
               push: true
               connection-config:
-                keepalive-time: 60
+                keepalive-time: 180
                 retry-limit: 5
                 retry-delay: 1000
                 request-timeout: 180
@@ -360,7 +360,7 @@ jobs:
             - url: https://cache.projectbluefin.io:11002
               push: true
               connection-config:
-                keepalive-time: 60
+                keepalive-time: 180
                 retry-limit: 5
                 retry-delay: 1000
                 request-timeout: 180
@@ -372,7 +372,7 @@ jobs:
             storage-service:
               url: https://cache.projectbluefin.io:11002
               connection-config:
-                keepalive-time: 60
+                keepalive-time: 180
                 retry-limit: 5
                 retry-delay: 1000
                 request-timeout: 180
