@@ -47,27 +47,60 @@ bst *ARGS:
 
 # ── Build ─────────────────────────────────────────────────────────────
 # Build the OCI image and load it into podman.
+#
+# Variant selects which top-level OCI element to build:
+#   all     → both default and nvidia, sequentially  (refs below)
+#   default → oci/bluefin.bst                        ({{image_name}}:{{image_tag}})
+#   nvidia  → oci/bluefin-nvidia.bst                 ({{image_name}}-nvidia:{{image_tag}})
+#
+# Usage:
+#   just build              # builds BOTH variants (default + nvidia)
+#   just build default      # only default bluefin variant
+#   just build nvidia       # only nvidia variant
+#
+# When variant=all we run the per-variant build recursively so each one
+# also runs its own export + chunkify, leaving two podman refs:
+# dakota:latest and dakota-nvidia:latest.
 [group('build')]
-build:
+build variant="all":
     #!/usr/bin/env bash
     set -euo pipefail
 
-    echo "==> Building OCI image with BuildStream (inside bst2 container)..."
-    just bst build oci/bluefin.bst
+    if [ "{{variant}}" = "all" ]; then
+        just build default
+        just build nvidia
+        exit 0
+    fi
 
-    just export
+    case "{{variant}}" in
+        default) ELEMENT="oci/bluefin.bst" ;;
+        nvidia)  ELEMENT="oci/bluefin-nvidia.bst" ;;
+        *) echo "ERROR: unknown variant '{{variant}}' (expected: all | default | nvidia)" >&2; exit 1 ;;
+    esac
+
+    echo "==> Building $ELEMENT with BuildStream (inside bst2 container)..."
+    just bst build "$ELEMENT"
+
+    just export {{variant}}
 
 # ── Export ─────────────────────────────────────────────────────────────
 # Checkout the built OCI image from BuildStream and load it into podman.
-# Assumes `bst build oci/bluefin.bst` has already completed.
+# Assumes the matching `just bst build` has already completed.
 # Used by: `just build` (after building) and CI (as a separate step).
 #
 # Uses SUDO_CMD to handle root vs non-root: CI runs as root (no sudo),
 # local dev needs sudo for podman access to containers-storage.
 [group('build')]
-export:
+export variant="default":
     #!/usr/bin/env bash
     set -euo pipefail
+
+    case "{{variant}}" in
+        default) ELEMENT="oci/bluefin.bst";        FINAL_NAME="{{image_name}}" ;;
+        nvidia)  ELEMENT="oci/bluefin-nvidia.bst"; FINAL_NAME="{{image_name}}-nvidia" ;;
+        *) echo "ERROR: unknown variant '{{variant}}' (expected: default | nvidia)" >&2; exit 1 ;;
+    esac
+    FINAL_TAG="{{image_tag}}"
 
     # Use sudo unless already root (CI runners are root)
     SUDO_CMD=""
@@ -75,9 +108,9 @@ export:
         SUDO_CMD="sudo"
     fi
 
-    echo "==> Exporting OCI image..."
+    echo "==> Exporting OCI image ($ELEMENT → ${FINAL_NAME}:${FINAL_TAG})..."
     rm -rf .build-out
-    just bst artifact checkout oci/bluefin.bst --directory /src/.build-out
+    just bst artifact checkout "$ELEMENT" --directory /src/.build-out
 
     # Load the multi-layer OCI image and squash into a single layer.
     # BuildStream produces separate layers (platform + gnomeos + bluefin);
@@ -86,7 +119,7 @@ export:
     echo "==> Loading and squashing OCI image..."
     IMAGE_ID=$($SUDO_CMD podman pull -q oci:.build-out)
     rm -rf .build-out
-    
+
     # Build label arguments for dynamic OCI metadata
     LABEL_ARGS=""
     if [ -n "${OCI_IMAGE_CREATED}" ]; then
@@ -98,21 +131,21 @@ export:
     if [ -n "${OCI_IMAGE_VERSION}" ]; then
         LABEL_ARGS="${LABEL_ARGS} --label org.opencontainers.image.version=${OCI_IMAGE_VERSION}"
     fi
-    
+
     # Squash, inject build-date VERSION_ID, and apply dynamic labels.
     # BST has no string option type, so VERSION_ID is set to "0" in os-release.bst
     # and replaced here at export time — after the BST cache key is already fixed.
     DATE_TAG="$(date -u +%Y%m%d)"
     # shellcheck disable=SC2086
     printf 'FROM %s\nRUN sed -i "s/^VERSION_ID=.*/VERSION_ID=\\"%s\\"/" /usr/lib/os-release \\\n    && sed -i "s/^IMAGE_VERSION=.*/IMAGE_VERSION=\\"%s\\"/" /usr/lib/os-release\n' "$IMAGE_ID" "$DATE_TAG" "$DATE_TAG" \
-        | $SUDO_CMD podman build --pull=never --security-opt label=type:unconfined_t --squash-all ${LABEL_ARGS} -t "{{image_name}}:{{image_tag}}" -f - .
+        | $SUDO_CMD podman build --pull=never --security-opt label=type:unconfined_t --squash-all ${LABEL_ARGS} -t "${FINAL_NAME}:${FINAL_TAG}" -f - .
     $SUDO_CMD podman rmi "$IMAGE_ID" || true
 
-    echo "==> Export complete. Image loaded as {{image_name}}:{{image_tag}}"
+    echo "==> Export complete. Image loaded as ${FINAL_NAME}:${FINAL_TAG}"
     $SUDO_CMD podman images | grep -E "{{image_name}}|REPOSITORY" || true
 
     # Step: Chunkify (reorganize layers)
-    just chunkify "{{image_name}}:{{image_tag}}"
+    just chunkify "${FINAL_NAME}:${FINAL_TAG}"
 
 # ── Clean ─────────────────────────────────────────────────────────────
 # Remove generated artifacts (disk image, OVMF vars, build output).
@@ -139,14 +172,23 @@ bootc *ARGS:
         "{{image_name}}:{{image_tag}}" bootc {{ARGS}}
 
 # ── Generate bootable disk image ─────────────────────────────────────
+# Variant selects which loaded image to install (default | nvidia).
+# Mirrors `just build` / `just export`'s tag scheme.
 [group('test')]
-generate-bootable-image $base_dir=base_dir $filesystem=filesystem:
+generate-bootable-image variant="default" $base_dir=base_dir $filesystem=filesystem:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    if ! sudo podman image exists "{{image_name}}:{{image_tag}}"; then
-        echo "ERROR: Image '{{image_name}}:{{image_tag}}' not found in podman." >&2
-        echo "Run 'just build' first to build and export the OCI image." >&2
+    case "{{variant}}" in
+        default) FINAL_NAME="{{image_name}}" ;;
+        nvidia)  FINAL_NAME="{{image_name}}-nvidia" ;;
+        *) echo "ERROR: unknown variant '{{variant}}' (expected: default | nvidia)" >&2; exit 1 ;;
+    esac
+
+    REF="${FINAL_NAME}:{{image_tag}}"
+    if ! sudo podman image exists "$REF"; then
+        echo "ERROR: Image '$REF' not found in podman." >&2
+        echo "Run 'just build {{variant}}' first to build and export the OCI image." >&2
         exit 1
     fi
 
@@ -155,8 +197,8 @@ generate-bootable-image $base_dir=base_dir $filesystem=filesystem:
         fallocate -l 30G "${base_dir}/bootable.raw"
     fi
 
-    echo "==> Installing OS to disk image via bootc..."
-    just bootc install to-disk \
+    echo "==> Installing $REF to disk image via bootc..."
+    BUILD_IMAGE_NAME="$FINAL_NAME" just bootc install to-disk \
         --via-loopback /data/bootable.raw \
         --filesystem "${filesystem}" \
         --wipe \
@@ -171,7 +213,7 @@ generate-bootable-image $base_dir=base_dir $filesystem=filesystem:
 
     echo "==> Bootable disk image ready: ${base_dir}/bootable.raw"
     sync
-    
+
     # Remove stale qcow2 so boot-vm uses the fresh raw image
     rm -f "${base_dir}/bootable.qcow2"
 
@@ -426,7 +468,9 @@ show-me-the-future:
     echo ""
 
     # ── Steps ─────────────────────────────────────────────────────
-    run_step "Build OCI image" just build
+    # Pinned to the `default` variant so we don't double the wall time
+    # building the nvidia variant the user never boots in this flow.
+    run_step "Build OCI image" just build default
     echo ""
     run_step "Bootable disk" just generate-bootable-image
     echo ""

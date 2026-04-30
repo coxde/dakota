@@ -32,6 +32,26 @@ jobs:
     permissions:
       contents: read
       packages: write
+    # Variant matrix: the default Bluefin image and the NVIDIA variant build
+    # in parallel. They share the BST artifact cache via cache.projectbluefin.io,
+    # so whichever runs first warms the closure for the other. NVIDIA is
+    # `continue-on-error: true` so its failure doesn't block the default image's
+    # publication, and `publish: false` keeps it out of GHCR until promoted.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: default
+            element: oci/bluefin.bst
+            image_suffix: ''
+            publish: true
+            continue: false
+          - variant: nvidia
+            element: oci/bluefin-nvidia.bst
+            image_suffix: '-nvidia'
+            publish: false
+            continue: true
+    continue-on-error: ${{ matrix.continue }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -198,7 +218,7 @@ jobs:
         env:
           BST_FLAGS: --no-interactive --config /src/buildstream-ci.conf
         run: |
-          just bst build oci/bluefin.bst
+          just bst build ${{ matrix.element }}
         timeout-minutes: 420
 
       # ── Export OCI image ──────────────────────────────────────────────
@@ -217,8 +237,8 @@ jobs:
           OCI_IMAGE_REVISION: ${{ github.sha }}
           OCI_IMAGE_VERSION: latest
         run: |
-          just export
-          echo "image_ref=${{ env.IMAGE_NAME }}:latest" >> "$GITHUB_OUTPUT"
+          just export ${{ matrix.variant }}
+          echo "image_ref=${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}:latest" >> "$GITHUB_OUTPUT"
 
       - name: Verify image loaded
         run: sudo podman images
@@ -226,6 +246,8 @@ jobs:
       # ── Validation ────────────────────────────────────────────────────
 
       - name: Validate with bootc container lint
+        env:
+          BUILD_IMAGE_NAME: ${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}
         run: |
            just lint
 
@@ -242,36 +264,39 @@ jobs:
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
-          name: buildstream-logs-x86_64
+          name: buildstream-logs-x86_64-${{ matrix.variant }}
           path: logs/
           retention-days: 7
           if-no-files-found: ignore
 
       - name: Login to GHCR
         if: >-
-          github.event_name == 'merge_group' ||
-          github.event_name == 'schedule' ||
-          github.event_name == 'workflow_dispatch'
+          matrix.publish &&
+          (github.event_name == 'merge_group' ||
+           github.event_name == 'schedule' ||
+           github.event_name == 'workflow_dispatch')
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | \
             sudo podman login ghcr.io --username ${{ github.actor }} --password-stdin
 
       - name: Tag image for GHCR
         if: >-
-          github.event_name == 'merge_group' ||
-          github.event_name == 'schedule' ||
-          github.event_name == 'workflow_dispatch'
+          matrix.publish &&
+          (github.event_name == 'merge_group' ||
+           github.event_name == 'schedule' ||
+           github.event_name == 'workflow_dispatch')
         run: |
           sudo podman tag "localhost/${{ steps.export.outputs.image_ref }}" \
-            "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+            "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}:latest"
           sudo podman tag "localhost/${{ steps.export.outputs.image_ref }}" \
-            "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+            "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}:${{ github.sha }}"
 
       - name: Push to GHCR
         if: >-
-          github.event_name == 'merge_group' ||
-          github.event_name == 'schedule' ||
-          github.event_name == 'workflow_dispatch'
+          matrix.publish &&
+          (github.event_name == 'merge_group' ||
+           github.event_name == 'schedule' ||
+           github.event_name == 'workflow_dispatch')
         run: |
           for tag in latest "${{ github.sha }}"; do
             for i in 1 2 3; do
@@ -279,7 +304,7 @@ jobs:
               # After chunkah rechunking, blobs are fresh uncompressed — explicit flag
               # prevents GHCR from negotiating zstd:chunked regardless of podman defaults.
               sudo podman push --compression-format=zstd \
-                "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}" && break
+                "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}:${tag}" && break
               echo "Push attempt $i failed for tag ${tag}, retrying..."
               sleep 5
             done
