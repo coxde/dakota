@@ -7,6 +7,9 @@ depends:
 public:
   bst:
     integration-commands:
+      # GNOME OS currently contributes a passwordless sudo policy; remove it
+      # so wheel uses the standard passworded policy by default.
+      - rm -f /etc/sudoers.d/wheel-nopasswd
       # Wipe /var (may contain build-time state) and all FHS dirs that should
       # be symlinks into /var, then recreate with the correct structure.
       # Relative symlinks (var/home not /var/home) match zirconium-hawaii and
