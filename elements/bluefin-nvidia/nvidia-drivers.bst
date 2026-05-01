@@ -172,6 +172,25 @@ config:
     # libcuda's SONAME is libcuda.so.1, not libcuda.so.
     [ -e "$LIBDIR/libcuda.so.1" ] || ln -sf "libcuda.so.%{nvidia-version}" "$LIBDIR/libcuda.so.1"
 
+    # Userspace tools shipped in the .run payload — install-commands above
+    # only handle libraries, kernel modules, firmware, and ICDs, so without
+    # this loop /usr/bin/nvidia-smi is absent. nvidia-modprobe is 0755, not
+    # 4755: modules load at boot via /etc/modules-load.d, so an unprivileged
+    # process never needs to invoke it.
+    BINDIR="%{install-root}/usr/bin"
+    install -d "$BINDIR"
+    for bin in \
+        nvidia-smi \
+        nvidia-debugdump \
+        nvidia-modprobe \
+        nvidia-persistenced \
+        nvidia-cuda-mps-control \
+        nvidia-cuda-mps-server \
+        nvidia-powerd \
+    ; do
+        [ -f "$bin" ] && install -Dm755 "$bin" "$BINDIR/$bin" || true
+    done
+
     if [ -f nvidia_icd.json ]; then
         install -Dm644 nvidia_icd.json \
             "%{install-root}/usr/share/vulkan/icd.d/nvidia_icd.json"
