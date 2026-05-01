@@ -115,7 +115,7 @@ config:
   - |
     set -euo pipefail
     cd extracted
-    LIBDIR="%{install-root}/usr/lib/%{abi}"
+    LIBDIR="%{install-root}%{libdir}"
     install -d "$LIBDIR" "$LIBDIR/vdpau"
 
     for lib in \
