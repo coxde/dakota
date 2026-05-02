@@ -230,9 +230,9 @@ jobs:
       # Push the built artifact to the remote CAS so the export job can pull it.
       # Remote execution may populate the artifact cache implicitly, but an
       # explicit push guarantees the artifact is there regardless of BST internals.
-      # Only push for the default variant (export job only handles default).
+      # Push both variants so publish.yml can fetch each from CAS.
       - name: Push OCI artifact to remote CAS
-        if: github.event_name != 'pull_request' && matrix.variant == 'default'
+        if: github.event_name != 'pull_request'
         env:
           BST_FLAGS: -o x86_64_v3 true --no-interactive --config /src/buildstream-ci.conf
         run: |
