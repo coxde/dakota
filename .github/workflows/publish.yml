@@ -94,7 +94,7 @@ jobs:
         # Uses cross-run download — requires actions: read permission.
         # Fails immediately if artifact doesn't exist (missing = build state is bad;
         # do not retry, re-run build.yml first then re-dispatch publish).
-        uses: actions/download-artifact@fa0a91b85d4f404e444306234dcc6d4aab00b1c8 # v4.1.8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: dakota-oci-${{ env.BUILD_SHA }}
           run-id: ${{ env.BUILD_RUN_ID }}
@@ -159,10 +159,10 @@ jobs:
           done
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@v3.9.0
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
 
       - name: Install oras
-        uses: oras-project/setup-oras@v1
+        uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
 
       - name: Sign image
         env:
@@ -191,7 +191,7 @@ jobs:
             "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}@${SBOM_DIGEST}"
 
       - name: SLSA attestation
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
           subject-name: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.push-sha.outputs.digest }}
