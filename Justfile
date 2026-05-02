@@ -558,9 +558,9 @@ chunkify image_ref:
     # Run chunkah against the overlay (bind-mounted read-only).
     # --max-layers 120 balances layer granularity with registry storage space.
     # CHUNKAH_CONFIG_STR preserves OCI labels (containers.bootc=1).
-    # Image pinned from quay.io/coreos/chunkah:latest as of 2026-04-21.
+    # Image pinned from quay.io/coreos/chunkah:v0.4.0 (2026-05-02).
     # Pre-pull with retries so transient registry 5xx errors don't abort the run.
-    CHUNKAH_REF="quay.io/coreos/chunkah@sha256:306371251e61cc870c8546e225b13bdf2e333f79461dc5e0fc280cc170cee070"
+    CHUNKAH_REF="quay.io/coreos/chunkah@sha256:faa8209f267fd1b384f3f4008a27ac0603333aab0d206bb146faf326282c64b4"
     for attempt in 1 2 3; do
         $SUDO_CMD podman pull "$CHUNKAH_REF" && break
         echo "==> chunkah pull attempt $attempt failed, retrying in 10s..."
@@ -755,8 +755,8 @@ verify image_ref="":
         echo "SKIP: cosign not installed"
     else
         cosign verify \
-            --certificate-identity \
-                'https://github.com/projectbluefin/dakota/.github/workflows/publish.yml@refs/heads/main' \
+            --certificate-identity-regexp \
+                '^https://github\.com/projectbluefin/dakota/\.github/workflows/publish\.yml@refs/heads/(main|gh-readonly-queue/main/.+)$' \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             "${IMAGE}" && echo "PASS: signature valid" || { echo "FAIL: signature check failed"; STATUS=1; }
     fi
