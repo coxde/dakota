@@ -11,9 +11,7 @@ not actively maintained for security updates.
 Please **do not** open a public GitHub issue for security vulnerabilities.
 
 Report security vulnerabilities privately via GitHub's Security Advisory
-feature:
-
-**https://github.com/projectbluefin/dakota/security/advisories/new**
+feature (projectbluefin/dakota → Security → Advisories → New draft advisory)
 
 Or contact the maintainers by email at:
 
@@ -44,7 +42,7 @@ Verify the image signature:
 ```bash
 cosign verify \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp '^https://github.com/projectbluefin/dakota/.github/workflows/' \
+  --certificate-identity-regexp '^https://github.com/projectbluefin/dakota/.github/workflows/publish.yml@refs/heads/main$' \
   ghcr.io/projectbluefin/dakota:latest
 ```
 
@@ -53,6 +51,6 @@ Verify the SLSA provenance:
 cosign verify-attestation \
   --type https://slsa.dev/provenance/v1 \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp '^https://github.com/projectbluefin/dakota/.github/workflows/' \
+  --certificate-identity-regexp '^https://github.com/projectbluefin/dakota/.github/workflows/publish.yml@refs/heads/main$' \
   ghcr.io/projectbluefin/dakota:latest
 ```
