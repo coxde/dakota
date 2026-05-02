@@ -242,7 +242,7 @@ boot-vm $base_dir=base_dir:
     # Check for native QEMU
     if command -v qemu-system-x86_64 &>/dev/null; then
         echo "==> Using native qemu-system-x86_64..."
-        
+
         # Auto-detect OVMF firmware paths
         OVMF_CODE=""
         for candidate in \
@@ -324,7 +324,7 @@ boot-vm $base_dir=base_dir:
             port=$(( port + 1 ))
         done
         echo "==> Web/VNC accessible at http://localhost:${port}"
-        
+
         # Try to open browser
         xdg-open "http://localhost:${port}" &>/dev/null || true
 
@@ -353,17 +353,17 @@ boot-vm $base_dir=base_dir:
 convert-to-qcow2 $base_dir=base_dir:
     #!/usr/bin/env bash
     set -euo pipefail
-    
+
     RAW="{{base_dir}}/bootable.raw"
     QCOW2="{{base_dir}}/bootable.qcow2"
-    
+
     if [ ! -e "$RAW" ]; then
         echo "ERROR: ${RAW} not found. Run 'just generate-bootable-image' first." >&2
         exit 1
     fi
-    
+
     echo "==> Converting ${RAW} to ${QCOW2}..."
-    
+
     if command -v qemu-img &>/dev/null; then
         qemu-img convert -f raw -O qcow2 "$RAW" "$QCOW2"
     else
