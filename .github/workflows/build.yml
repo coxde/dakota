@@ -16,6 +16,8 @@ on:
     # require gbm.gnome.org to have built the new ref first. The 13:00 UTC
     # schedule above provides this buffer. Early dispatch = cold build = timeout.
 
+permissions: read-all
+
 env:
   IMAGE_NAME: dakota
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
