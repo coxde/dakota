@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   publish:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'schedule') && 'ubuntu-24.04' || 'blacksmith-4vcpu-ubuntu-2404' }}
     permissions:
       contents: read
       packages: write
@@ -31,11 +31,26 @@ jobs:
        (github.event.workflow_run.head_branch == 'main' ||
         startsWith(github.event.workflow_run.head_branch, 'gh-readonly-queue/main/')))
     steps:
+      - name: Resolve build SHA and trigger event
+        id: context
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+            echo "event=${{ github.event.workflow_run.event }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            echo "event=${{ github.event_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: ${{ steps.context.outputs.sha }}
 
       - name: Setup Just
-        uses: taiki-e/install-action@just
+        uses: taiki-e/install-action@51cd0b8c0499559d9a4d75c0f5c67bec3a894ec8 # v2
+        with:
+          tool: just
 
       - name: Capture build timestamp
         id: timestamp
@@ -113,9 +128,12 @@ jobs:
           BST_FLAGS: -o x86_64_v3 true --no-interactive --config /src/buildstream-ci.conf
           BUILD_IMAGE_NAME: ${{ env.IMAGE_NAME }}
           OCI_IMAGE_CREATED: ${{ steps.timestamp.outputs.created }}
-          OCI_IMAGE_REVISION: ${{ github.sha }}
+          OCI_IMAGE_REVISION: ${{ steps.context.outputs.sha }}
           OCI_IMAGE_VERSION: latest
         run: just export
+
+      - name: Validate with bootc container lint
+        run: just lint
 
       - name: Generate SBOM
         env:
@@ -132,18 +150,46 @@ jobs:
           echo "$GH_TOKEN" | podman login ghcr.io --username "$GH_ACTOR" --password-stdin \
             --compat-auth-file ~/.docker/config.json
 
-      - name: Push to GHCR and capture digest
+      - name: Push to GHCR
         id: push
+        env:
+          BUILD_SHA: ${{ steps.context.outputs.sha }}
+          TRIGGER_EVENT: ${{ steps.context.outputs.event }}
         run: |
-          sudo podman tag "localhost/${{ env.IMAGE_NAME }}:latest" \
-            "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
-          sudo podman push --compression-format=zstd \
-            --digestfile /tmp/digest.txt \
-            "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          IMAGE="${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}"
+
+          # Always tag and push :$BUILD_SHA
+          sudo podman tag "localhost/${{ env.IMAGE_NAME }}:latest" "${IMAGE}:${BUILD_SHA}"
+
+          PUSH_OK=false
+          for attempt in 1 2 3; do
+            sudo podman push --compression-format=zstd \
+              --digestfile /tmp/digest.txt \
+              "${IMAGE}:${BUILD_SHA}" && { PUSH_OK=true; break; }
+            echo "Push attempt ${attempt} failed for :${BUILD_SHA}, retrying in 5s..."
+            [ "$attempt" -lt 3 ] && sleep 5
+          done
+          $PUSH_OK || { echo "ERROR: all push attempts failed for :${BUILD_SHA}"; exit 1; }
+
+          # Push :latest on schedule or workflow_dispatch (including downstream from build.yml dispatch)
+          if [[ "$TRIGGER_EVENT" == "schedule" || "$TRIGGER_EVENT" == "workflow_dispatch" ]]; then
+            sudo podman tag "localhost/${{ env.IMAGE_NAME }}:latest" "${IMAGE}:latest"
+            PUSH_OK=false
+            for attempt in 1 2 3; do
+              sudo podman push --compression-format=zstd \
+                "${IMAGE}:latest" && { PUSH_OK=true; break; }
+              echo "Push attempt ${attempt} failed for :latest, retrying in 5s..."
+              [ "$attempt" -lt 3 ] && sleep 5
+            done
+            $PUSH_OK || { echo "ERROR: all push attempts failed for :latest"; exit 1; }
+          fi
+
           echo "digest=$(cat /tmp/digest.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Install cosign
         uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
+        with:
+          cosign-release: v3.0.6
 
       - name: Install oras
         uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
@@ -160,12 +206,17 @@ jobs:
         env:
           DIGEST: ${{ steps.push.outputs.digest }}
         run: |
+          set -o pipefail
           SBOM_DIGEST=$(oras attach \
             --artifact-type application/vnd.spdx+json \
             --format json \
             "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}" \
             dakota.spdx.json:application/vnd.spdx+json \
-            | python3 -c "import json,sys; print(json.load(sys.stdin)['digest'])")
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['digest'])")
+          if [[ -z "$SBOM_DIGEST" || "$SBOM_DIGEST" == "None" ]]; then
+            echo "ERROR: Failed to capture SBOM digest from oras attach"
+            exit 1
+          fi
           echo "sbom_digest=${SBOM_DIGEST}" >> "$GITHUB_OUTPUT"
 
       - name: Sign SBOM
