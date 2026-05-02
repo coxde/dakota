@@ -9,6 +9,12 @@ sources:
   path: patches/gnome-build-meta
 
 config:
+  options:
+    arch: '%{arch}'
+    (?):
+    - x86_64_v3:
+        x86_64_v3: true
+
   overrides:
     # This along with the patches is required and has to match what gnome-build-meta is using
     freedesktop-sdk.bst: freedesktop-sdk.bst
