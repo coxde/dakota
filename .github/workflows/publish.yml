@@ -19,6 +19,24 @@ concurrency:
 jobs:
   publish:
     runs-on: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'schedule') && 'ubuntu-24.04' || 'blacksmith-4vcpu-ubuntu-2404' }}
+    # Variant matrix: default and NVIDIA publish in parallel from the shared
+    # BST artifact cache. NVIDIA is `continue-on-error: true` so its failure
+    # does not block default publication.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: default
+            element: oci/bluefin.bst
+            image_suffix: ''
+            sbom_filename: dakota.spdx.json
+            continue: false
+          - variant: nvidia
+            element: oci/bluefin-nvidia.bst
+            image_suffix: '-nvidia'
+            sbom_filename: dakota-nvidia.spdx.json
+            continue: true
+    continue-on-error: ${{ matrix.continue }}
     permissions:
       contents: read
       packages: write
@@ -132,15 +150,17 @@ jobs:
           OCI_IMAGE_CREATED: ${{ steps.timestamp.outputs.created }}
           OCI_IMAGE_REVISION: ${{ steps.context.outputs.sha }}
           OCI_IMAGE_VERSION: latest
-        run: just export
+        run: just export ${{ matrix.variant }}
 
       - name: Validate with bootc container lint
+        env:
+          BUILD_IMAGE_NAME: ${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}
         run: just lint
 
       - name: Generate SBOM
         env:
           BST_FLAGS: -o x86_64_v3 true --no-interactive --config /src/buildstream-ci.conf
-        run: just sbom
+        run: just sbom ${{ matrix.variant }}
 
       - name: Login to GHCR
         env:
@@ -158,10 +178,11 @@ jobs:
           BUILD_SHA: ${{ steps.context.outputs.sha }}
           TRIGGER_EVENT: ${{ steps.context.outputs.event }}
         run: |
-          IMAGE="${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}"
+          LOCAL_IMAGE="${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}"
+          IMAGE="${{ env.IMAGE_REGISTRY }}/${LOCAL_IMAGE}"
 
           # Always tag and push :$BUILD_SHA
-          sudo podman tag "localhost/${{ env.IMAGE_NAME }}:latest" "${IMAGE}:${BUILD_SHA}"
+          sudo podman tag "localhost/${LOCAL_IMAGE}:latest" "${IMAGE}:${BUILD_SHA}"
 
           PUSH_OK=false
           for attempt in 1 2 3; do
@@ -175,7 +196,7 @@ jobs:
 
           # Push :latest on schedule or workflow_dispatch (including downstream from build.yml dispatch)
           if [[ "$TRIGGER_EVENT" == "schedule" || "$TRIGGER_EVENT" == "workflow_dispatch" ]]; then
-            sudo podman tag "localhost/${{ env.IMAGE_NAME }}:latest" "${IMAGE}:latest"
+            sudo podman tag "localhost/${LOCAL_IMAGE}:latest" "${IMAGE}:latest"
             PUSH_OK=false
             for attempt in 1 2 3; do
               sudo podman push --compression-format=zstd \
@@ -201,7 +222,7 @@ jobs:
           DIGEST: ${{ steps.push.outputs.digest }}
         run: |
           cosign sign -y \
-            "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}"
+            "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}@${DIGEST}"
 
       - name: Attach SBOM
         id: sbom-attach
@@ -212,8 +233,8 @@ jobs:
           SBOM_DIGEST=$(oras attach \
             --artifact-type application/vnd.spdx+json \
             --format json \
-            "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}" \
-            dakota.spdx.json:application/vnd.spdx+json \
+            "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}@${DIGEST}" \
+            ${{ matrix.sbom_filename }}:application/vnd.spdx+json \
             | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['digest'])")
           if [[ -z "$SBOM_DIGEST" || "$SBOM_DIGEST" == "None" ]]; then
             echo "ERROR: Failed to capture SBOM digest from oras attach"
@@ -226,11 +247,11 @@ jobs:
           SBOM_DIGEST: ${{ steps.sbom-attach.outputs.sbom_digest }}
         run: |
           cosign sign -y \
-            "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}@${SBOM_DIGEST}"
+            "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}@${SBOM_DIGEST}"
 
       - name: SLSA attestation
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
-          subject-name: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-name: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.image_suffix }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
