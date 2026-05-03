@@ -558,9 +558,9 @@ chunkify image_ref:
     # Run chunkah against the overlay (bind-mounted read-only).
     # --max-layers 120 balances layer granularity with registry storage space.
     # CHUNKAH_CONFIG_STR preserves OCI labels (containers.bootc=1).
-    # Image pinned from quay.io/coreos/chunkah:latest as of 2026-04-21.
+    # Image pinned from quay.io/coreos/chunkah:v0.4.0 (2026-05-02).
     # Pre-pull with retries so transient registry 5xx errors don't abort the run.
-    CHUNKAH_REF="quay.io/coreos/chunkah@sha256:306371251e61cc870c8546e225b13bdf2e333f79461dc5e0fc280cc170cee070"
+    CHUNKAH_REF="quay.io/coreos/chunkah@sha256:faa8209f267fd1b384f3f4008a27ac0603333aab0d206bb146faf326282c64b4"
     for attempt in 1 2 3; do
         $SUDO_CMD podman pull "$CHUNKAH_REF" && break
         echo "==> chunkah pull attempt $attempt failed, retrying in 10s..."
@@ -672,9 +672,16 @@ inspect: _ensure-bcvk
 #   jq '.packages | length' dakota.spdx.json  # expect ~1100+
 #   jq -r '.packages[].name' dakota.spdx.json | grep -i "gnome\|gtk\|systemd"
 [group('test')]
-sbom:
+sbom variant="default":
     #!/usr/bin/env bash
     set -euo pipefail
+
+    case "{{variant}}" in
+        default) ELEMENT="oci/bluefin.bst";        SPDX_NAME="dakota";        OUTFILE="dakota.spdx.json" ;;
+        nvidia)  ELEMENT="oci/bluefin-nvidia.bst"; SPDX_NAME="dakota-nvidia"; OUTFILE="dakota-nvidia.spdx.json" ;;
+        *) echo "ERROR: unknown variant '{{variant}}' (expected: default | nvidia)" >&2; exit 1 ;;
+    esac
+
     # Persist the snakeoil key cache so bst show runs silently (see bst recipe).
     mkdir -p "${HOME}/.config/buildstream-generate"
     GIT_SHA="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
@@ -683,7 +690,7 @@ sbom:
     # caches the result. If the cache is cold, the make output pollutes stdout
     # and breaks buildstream-sbom's bst show pipe. Priming here ensures the
     # cache is warm before buildstream-sbom runs.
-    echo "==> Priming BST generated source cache..."
+    echo "==> Priming BST generated source cache (${ELEMENT})..."
     podman run --rm \
         --privileged \
         --device /dev/fuse \
@@ -693,10 +700,10 @@ sbom:
         -v "${HOME}/.config/buildstream-generate:/root/.config/buildstream-generate:rw" \
         -w /src \
         "{{bst2_image}}" \
-        bash -c 'bst --no-colors show --deps none --format "%{name}" oci/bluefin.bst' \
+        bash -c "bst --no-colors show --deps none --format '%{name}' ${ELEMENT}" \
         2>/dev/null || true
 
-    echo "==> Generating BST-native SBOM with buildstream-sbom..."
+    echo "==> Generating BST-native SBOM with buildstream-sbom (${ELEMENT} → ${OUTFILE})..."
     # Pinned to commit 0706fec3 (2026-04-01) — latest main, includes element
     # names in SPDX output (issue #9 fix). Switch to a versioned PyPI release
     # once the project publishes one.
@@ -708,29 +715,33 @@ sbom:
         -v "${HOME}/.cache/buildstream:/root/.cache/buildstream:rw" \
         -v "${HOME}/.config/buildstream-generate:/root/.config/buildstream-generate:rw" \
         -w /src \
+        -e ELEMENT="${ELEMENT}" \
+        -e SPDX_NAME="${SPDX_NAME}" \
+        -e OUTFILE="${OUTFILE}" \
+        -e GIT_SHA="${GIT_SHA}" \
         "{{bst2_image}}" \
-        bash -c "
+        bash -c '
             for attempt in 1 2 3; do
                 pip install --quiet \
                     git+https://gitlab.com/BuildStream/buildstream-sbom.git@0706fec3bedf6f73bd9d2fed32c2aed585feef8d \
                     && break
-                echo \"buildstream-sbom install failed (attempt \${attempt}/3); retrying in 5s...\"
-                [ \"\${attempt}\" -lt 3 ] && sleep 5
+                echo "buildstream-sbom install failed (attempt ${attempt}/3); retrying in 5s..."
+                [ "${attempt}" -lt 3 ] && sleep 5
             done
-            buildstream-sbom oci/bluefin.bst \
-                --spdx-name dakota \
-                --spdx-namespace https://github.com/projectbluefin/dakota/sbom/${GIT_SHA} \
-                --spdx-creator 'Tool: buildstream-sbom' \
-                --spdx-creator 'Organization: projectbluefin' \
+            buildstream-sbom "${ELEMENT}" \
+                --spdx-name "${SPDX_NAME}" \
+                --spdx-namespace "https://github.com/projectbluefin/dakota/sbom/${GIT_SHA}" \
+                --spdx-creator "Tool: buildstream-sbom" \
+                --spdx-creator "Organization: projectbluefin" \
                 --deps all \
-                --output /src/dakota.spdx.json
-        "
+                --output "/src/${OUTFILE}"
+        '
     echo ""
-    echo "==> SBOM written to: $(pwd)/dakota.spdx.json"
-    du -sh dakota.spdx.json
+    echo "==> SBOM written to: $(pwd)/${OUTFILE}"
+    du -sh "${OUTFILE}"
     echo ""
     echo "==> Package count:"
-    jq '.packages | length' dakota.spdx.json
+    jq '.packages | length' "${OUTFILE}"
 
 # ── Verify supply-chain signatures ───────────────────────────────────
 # Verify cosign signature + SBOM referrer + SLSA attestation for a
@@ -755,8 +766,8 @@ verify image_ref="":
         echo "SKIP: cosign not installed"
     else
         cosign verify \
-            --certificate-identity \
-                'https://github.com/projectbluefin/dakota/.github/workflows/publish.yml@refs/heads/main' \
+            --certificate-identity-regexp \
+                '^https://github\.com/projectbluefin/dakota/\.github/workflows/publish\.yml@refs/heads/(main|gh-readonly-queue/main/.+)$' \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             "${IMAGE}" && echo "PASS: signature valid" || { echo "FAIL: signature check failed"; STATUS=1; }
     fi

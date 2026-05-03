@@ -16,9 +16,7 @@ on:
           - manual-merge
           - tarballs
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: read-all
 
 env:
   BST2_IMAGE: registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:64eb0b4930d57a92710822898fb73af6cc1ae35d
@@ -26,6 +24,9 @@ env:
 jobs:
   track:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -125,7 +126,7 @@ jobs:
           fi
 
       - name: Setup Just
-        uses: taiki-e/install-action@481c34c1cf3a84c68b5e46f4eccfc82af798415a # v2
+        uses: taiki-e/install-action@51cd0b8c0499559d9a4d75c0f5c67bec3a894ec8 # v2
         with:
           tool: just
 
@@ -266,6 +267,9 @@ jobs:
 
   track-tarballs:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
     if: >-
       github.event.inputs.group == 'all' ||
       github.event.inputs.group == 'tarballs' ||
@@ -278,7 +282,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Just
-        uses: taiki-e/install-action@481c34c1cf3a84c68b5e46f4eccfc82af798415a # v2
+        uses: taiki-e/install-action@51cd0b8c0499559d9a4d75c0f5c67bec3a894ec8 # v2
         with:
           tool: just
 

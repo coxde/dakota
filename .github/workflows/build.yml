@@ -16,6 +16,8 @@ on:
     # require gbm.gnome.org to have built the new ref first. The 13:00 UTC
     # schedule above provides this buffer. Early dispatch = cold build = timeout.
 
+permissions: read-all
+
 env:
   IMAGE_NAME: dakota
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
@@ -75,11 +77,28 @@ jobs:
       #       fs.writeFileSync('bluefin.token', token, { mode: 0o600 });
 
       - name: Setup Just
-        uses: taiki-e/install-action@just
+        uses: taiki-e/install-action@51cd0b8c0499559d9a4d75c0f5c67bec3a894ec8 # v2
+        with:
+          tool: just
 
       - name: Capture build timestamp
         id: timestamp
-        run: echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+        run: echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      # ── Disk and storage setup ────────────────────────────────────────
+      # Both steps must run before any podman call (BST uses rootful podman
+      # to pull bst2; storage backend must be stable before first use).
+      - name: Remove unwanted software
+        uses: ublue-os/remove-unwanted-software@cc0becac701cf642c8f0a6613bbdaf5dc36b259e # v9
+
+      - name: Mount BTRFS for podman storage
+        id: container-storage
+        uses: ublue-os/container-storage-action@dc1f4c8f17b672069e921f001132f7cf98a423a6
+        continue-on-error: true
+        with:
+          target-dir: /var/lib/containers
+          mount-opts: compress-force=zstd:2
+          loopback-free: '1'
 
       # ── Generate CI-specific BuildStream config ───────────────────────
       # Tuned per gnome-build-meta CI patterns:
@@ -208,12 +227,23 @@ jobs:
           just bst build ${{ matrix.element }}
         timeout-minutes: 420
 
+      # Push the built artifact to the remote CAS so the export job can pull it.
+      # Remote execution may populate the artifact cache implicitly, but an
+      # explicit push guarantees the artifact is there regardless of BST internals.
+      # Push both variants so publish.yml can fetch each from CAS.
+      - name: Push OCI artifact to remote CAS
+        if: github.event_name != 'pull_request'
+        env:
+          BST_FLAGS: -o x86_64_v3 true --no-interactive --config /src/buildstream-ci.conf
+        run: |
+          just bst artifact push --deps none ${{ matrix.element }}
+
       # ── Upload build logs ─────────────────────────────────────────────
       # Always upload, even on failure, so build failures can be diagnosed.
 
       - name: Upload build logs
         if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: buildstream-logs-x86_64-${{ matrix.variant }}
           path: logs/
@@ -248,14 +278,16 @@ jobs:
           loopback-free: '1'
 
       - name: Remove unwanted software
-        uses: ublue-os/remove-unwanted-software@695eb75bc387dbcd9685a8e72d23439d8686cba6 # v10
+        uses: ublue-os/remove-unwanted-software@cc0becac701cf642c8f0a6613bbdaf5dc36b259e # v9
 
       - name: Setup Just
-        uses: taiki-e/install-action@just
+        uses: taiki-e/install-action@51cd0b8c0499559d9a4d75c0f5c67bec3a894ec8 # v2
+        with:
+          tool: just
 
       - name: Capture build timestamp
         id: timestamp
-        run: echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+        run: echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
       - name: Generate BuildStream CI config
         env:
@@ -363,7 +395,7 @@ jobs:
 
       - name: Upload build logs
         if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: buildstream-logs-aarch64
           path: logs/
