@@ -51,4 +51,3 @@ depends:
   - bluefin/distrobox.bst
   - gnome-build-meta.bst:gnomeos-deps/just.bst
   - gnome-build-meta.bst:gnomeos-deps/wl-clipboard.bst
-  - bluefin/saturn.bst
