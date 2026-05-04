@@ -22,22 +22,27 @@ env:
   IMAGE_NAME: dakota
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
 
-# Only one build at a time. If a manual dispatch arrives while a scheduled
-# build is running, the in-progress run is cancelled.
+# Concurrency: serialize builds to avoid saturating cache.projectbluefin.io.
+# - PR builds all share one global slot ("pr") so only one PR build runs at
+#   a time; additional PR builds queue and run in order. Running builds are
+#   never cancelled (cancel-in-progress: false), so every PR completes its
+#   checks. A pending-but-not-yet-started run is replaced if a new one arrives.
+# - Scheduled/merge_group/dispatch use per-ref isolation so concurrent runs
+#   for the same ref queue rather than stomp each other.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && 'pr' || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-24.04
     # Variant matrix: the default Bluefin image and the NVIDIA variant build
-    # in parallel. They share the BST artifact cache via cache.projectbluefin.io,
-    # so whichever runs first warms the closure for the other. NVIDIA is
-    # `continue-on-error: true` so its failure doesn't block the default image's
-    # publication, and `publish: false` keeps it out of GHCR until promoted.
+    # in parallel for scheduled/merge_group/dispatch. On pull_request, run
+    # sequentially (max-parallel: 1) so only one BST session at a time uses
+    # the remote execution server.
     strategy:
       fail-fast: false
+      max-parallel: ${{ github.event_name == 'pull_request' && 1 || 2 }}
       matrix:
         include:
           - variant: default
@@ -111,6 +116,7 @@ jobs:
       #
       - name: Generate BuildStream CI config
         env:
+          EVENT_NAME: ${{ github.event_name }}
           CASD_CLIENT_CERT: ${{ vars.CASD_CLIENT_CERT }}
           CASD_CLIENT_KEY: ${{ secrets.CASD_CLIENT_KEY }}
         run: |
@@ -139,8 +145,14 @@ jobs:
             cat >> buildstream-ci.conf <<'BSTCONFPUSH'
           build:
             retry-failed: True
-            max-jobs: 32
           BSTCONFPUSH
+            # Limit remote-exec parallelism on PRs: one PR build at a time on
+            # the buildbox, so use 8 jobs instead of 32 to leave headroom.
+            if [[ "$EVENT_NAME" == "pull_request" ]]; then
+              echo "  max-jobs: 8" >> buildstream-ci.conf
+            else
+              echo "  max-jobs: 32" >> buildstream-ci.conf
+            fi
           else
             cat >> buildstream-ci.conf <<'BSTCONFNOPUSH'
           build:
