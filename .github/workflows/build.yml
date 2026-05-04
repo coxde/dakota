@@ -22,11 +22,16 @@ env:
   IMAGE_NAME: dakota
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
 
-# Only one build at a time. If a manual dispatch arrives while a scheduled
-# build is running, the in-progress run is cancelled.
+# Concurrency: serialize builds to avoid saturating cache.projectbluefin.io.
+# - PR builds all share one global slot ("pr") so only one PR build runs at
+#   a time; additional PR builds queue and run in order. Running builds are
+#   never cancelled (cancel-in-progress: false), so every PR completes its
+#   checks. A pending-but-not-yet-started run is replaced if a new one arrives.
+# - Scheduled/merge_group/dispatch use per-ref isolation so concurrent runs
+#   for the same ref queue rather than stomp each other.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && 'pr' || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
