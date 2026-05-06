@@ -17,6 +17,7 @@ depends:
   - bluefin/glow.bst
   - bluefin/gum.bst
   - bluefin/fzf.bst
+  - bluefin/tealdeer/tealdeer.bst
 
   - bluefin/common.bst
   - bluefin/composefs-loop-udisks-ignore.bst
