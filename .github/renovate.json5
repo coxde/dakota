@@ -19,7 +19,7 @@
     // Matches: bst2_image := env("BST2_IMAGE", "registry.../bst2:<sha>")  (Justfile)
     {
       "customType": "regex",
-      "managerFilePatterns": [
+      "fileMatch": [
         "/\\.github/workflows/build\\.yml$/",
         "/\\.github/workflows/track-bst-sources\\.yml$/",
         "/^Justfile$/"
@@ -36,7 +36,7 @@
     //          ref: <sha256>
     {
       "customType": "regex",
-      "managerFilePatterns": [
+      "fileMatch": [
         "/elements/plugins/.*\\.bst$/"
       ],
       "matchStrings": [
@@ -50,7 +50,7 @@
     // Matches: CHUNKAH_REF="quay.io/coreos/chunkah@sha256:<digest>"
     {
       "customType": "regex",
-      "managerFilePatterns": [
+      "fileMatch": [
         "/^Justfile$/"
       ],
       "matchStrings": [
