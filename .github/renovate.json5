@@ -47,17 +47,16 @@
     },
 
     // ── chunkah container image in Justfile ──
-    // Matches: CHUNKAH_REF="quay.io/coreos/chunkah@sha256:<digest>"
+    // Matches: CHUNKAH_REF="quay.io/coreos/chunkah:<tag>@sha256:<digest>"
     {
       "customType": "regex",
       "managerFilePatterns": [
         "/^Justfile$/"
       ],
       "matchStrings": [
-        "CHUNKAH_REF=\"(?<depName>quay\\.io/coreos/chunkah)@(?<currentDigest>sha256:[a-f0-9]{64})\""
+        "CHUNKAH_REF=\"(?<depName>quay\\.io/coreos/chunkah):(?<currentValue>v[^@]+)@(?<currentDigest>sha256:[a-f0-9]{64})\""
       ],
       "datasourceTemplate": "docker",
-      "currentValueTemplate": "latest"
     }
   ],
 

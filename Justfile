@@ -558,9 +558,9 @@ chunkify image_ref:
     # Run chunkah against the overlay (bind-mounted read-only).
     # --max-layers 120 balances layer granularity with registry storage space.
     # CHUNKAH_CONFIG_STR preserves OCI labels (containers.bootc=1).
-    # Image pinned from quay.io/coreos/chunkah:v0.4.0 (2026-05-02).
+    # chunkah image pinned by tag+digest for reproducibility
     # Pre-pull with retries so transient registry 5xx errors don't abort the run.
-    CHUNKAH_REF="quay.io/coreos/chunkah@sha256:faa8209f267fd1b384f3f4008a27ac0603333aab0d206bb146faf326282c64b4"
+    CHUNKAH_REF="quay.io/coreos/chunkah:v0.5.0@sha256:352097f3d32186ac11082f8b74cd544678b00388b50c96ba5c8e79503a454fe3"
     for attempt in 1 2 3; do
         $SUDO_CMD podman pull "$CHUNKAH_REF" && break
         echo "==> chunkah pull attempt $attempt failed, retrying in 10s..."
