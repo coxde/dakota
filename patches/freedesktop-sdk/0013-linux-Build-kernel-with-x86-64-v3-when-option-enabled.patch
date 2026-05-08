@@ -1,0 +1,29 @@
+From 79dd40d3f07f6ebda096f296cdc0ececdf17efb8 Mon Sep 17 00:00:00 2001
+From: Ahmed Adan <ahmed.adan@gmail.com>
+Date: Thu, 7 May 2026 20:52:05 -0400
+Subject: [PATCH] linux: Build kernel with x86-64-v3 when option enabled
+
+---
+ elements/components/linux.bst | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/elements/components/linux.bst b/elements/components/linux.bst
+index 1e1a755..f76f1a0 100644
+--- a/elements/components/linux.bst
++++ b/elements/components/linux.bst
+@@ -46,6 +46,12 @@ environment:
+   KBUILD_BUILD_TIMESTAMP: 'Thu Nov 10 15:00:00 UTC 2011'
+   KBUILD_BUILD_USER: 'tomjon'
+   MAXJOBS: "%{max-jobs}"
++  # arch/x86/Makefile hardcodes -march=x86-64 -mtune=generic, overriding
++  # gcc's --with-arch_64 default. KCFLAGS is appended after KBUILD_CFLAGS,
++  # so a later -march wins.
++  (?):
++  - x86_64_v3:
++      KCFLAGS: "-march=x86-64-v3 -mtune=skylake"
+ 
+ environment-nocache:
+ - MAXJOBS
+-- 
+2.54.0
+
