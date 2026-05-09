@@ -27,13 +27,20 @@ Some ISOs are duds, so here's an archive:
 <!-- iso-table-start -->
 | Date | ISO | Checksum |
 |------|-----|----------|
-| 2026-04-16 | [dakota-live-20260416-a7cd634.iso](https://projectbluefin.dev/dakota-live-20260416-a7cd634.iso) | [checksum](https://projectbluefin.dev/dakota-live-20260416-a7cd634.iso-CHECKSUM) |
-| 2026-04-16 | [dakota-live-20260416-fa525c1.iso](https://projectbluefin.dev/dakota-live-20260416-fa525c1.iso) | [checksum](https://projectbluefin.dev/dakota-live-20260416-fa525c1.iso-CHECKSUM) |
-| 2026-04-15 | [dakota-live-20260415-fa525c1.iso](https://projectbluefin.dev/dakota-live-20260415-fa525c1.iso) | [checksum](https://projectbluefin.dev/dakota-live-20260415-fa525c1.iso-CHECKSUM) |
-| 2026-04-15 | [dakota-live-20260415-c28ffaf.iso](https://projectbluefin.dev/dakota-live-20260415-c28ffaf.iso) | [checksum](https://projectbluefin.dev/dakota-live-20260415-c28ffaf.iso-CHECKSUM) |
-| 2026-04-14 | [dakota-live-20260414-c28ffaf.iso](https://projectbluefin.dev/dakota-live-20260414-c28ffaf.iso) | [checksum](https://projectbluefin.dev/dakota-live-20260414-c28ffaf.iso-CHECKSUM) |
-| 2026-04-13 | [dakota-live-20260413-c28ffaf.iso](https://projectbluefin.dev/dakota-live-20260413-c28ffaf.iso) | [checksum](https://projectbluefin.dev/dakota-live-20260413-c28ffaf.iso-CHECKSUM) |
-| 2026-04-13 | [dakota-live-20260413-9b9756e.iso](https://projectbluefin.dev/dakota-live-20260413-9b9756e.iso) | [checksum](https://projectbluefin.dev/dakota-live-20260413-9b9756e.iso-CHECKSUM) |
+| 2026-05-09 | [dakota-nvidia-live-20260509-3059a71.iso](https://projectbluefin.dev/dakota-nvidia-live-20260509-3059a71.iso) | [checksum](https://projectbluefin.dev/dakota-nvidia-live-20260509-3059a71.iso-CHECKSUM) |
+| 2026-05-08 | [dakota-nvidia-live-20260508-3059a71.iso](https://projectbluefin.dev/dakota-nvidia-live-20260508-3059a71.iso) | [checksum](https://projectbluefin.dev/dakota-nvidia-live-20260508-3059a71.iso-CHECKSUM) |
+| 2026-05-07 | [dakota-live-20260507-3059a71.iso](https://projectbluefin.dev/dakota-live-20260507-3059a71.iso) | [checksum](https://projectbluefin.dev/dakota-live-20260507-3059a71.iso-CHECKSUM) |
+| 2026-05-07 | [dakota-nvidia-live-20260507-b00fb97.iso](https://projectbluefin.dev/dakota-nvidia-live-20260507-b00fb97.iso) | [checksum](https://projectbluefin.dev/dakota-nvidia-live-20260507-b00fb97.iso-CHECKSUM) |
+| 2026-05-06 | [dakota-live-20260506-b00fb97.iso](https://projectbluefin.dev/dakota-live-20260506-b00fb97.iso) | [checksum](https://projectbluefin.dev/dakota-live-20260506-b00fb97.iso-CHECKSUM) |
+| 2026-05-05 | [dakota-nvidia-live-20260505-b00fb97.iso](https://projectbluefin.dev/dakota-nvidia-live-20260505-b00fb97.iso) | [checksum](https://projectbluefin.dev/dakota-nvidia-live-20260505-b00fb97.iso-CHECKSUM) |
+| 2026-05-04 | [dakota-nvidia-live-20260504-b00fb97.iso](https://projectbluefin.dev/dakota-nvidia-live-20260504-b00fb97.iso) | [checksum](https://projectbluefin.dev/dakota-nvidia-live-20260504-b00fb97.iso-CHECKSUM) |
+| 2026-05-03 | [dakota-nvidia-live-20260503-6661b18.iso](https://projectbluefin.dev/dakota-nvidia-live-20260503-6661b18.iso) | [checksum](https://projectbluefin.dev/dakota-nvidia-live-20260503-6661b18.iso-CHECKSUM) |
+| 2026-05-02 | [dakota-nvidia-live-20260502-6661b18.iso](https://projectbluefin.dev/dakota-nvidia-live-20260502-6661b18.iso) | [checksum](https://projectbluefin.dev/dakota-nvidia-live-20260502-6661b18.iso-CHECKSUM) |
+| 2026-05-02 | [dakota-nvidia-live-20260502-029e632.iso](https://projectbluefin.dev/dakota-nvidia-live-20260502-029e632.iso) | [checksum](https://projectbluefin.dev/dakota-nvidia-live-20260502-029e632.iso-CHECKSUM) |
+| 2026-05-01 | [dakota-nvidia-live-20260501-029e632.iso](https://projectbluefin.dev/dakota-nvidia-live-20260501-029e632.iso) | [checksum](https://projectbluefin.dev/dakota-nvidia-live-20260501-029e632.iso-CHECKSUM) |
+| 2026-05-01 | [dakota-nvidia-live-20260501-c961e9c.iso](https://projectbluefin.dev/dakota-nvidia-live-20260501-c961e9c.iso) | [checksum](https://projectbluefin.dev/dakota-nvidia-live-20260501-c961e9c.iso-CHECKSUM) |
+| 2026-04-21 | [dakota-live-20260421-87f2aff.iso](https://projectbluefin.dev/dakota-live-20260421-87f2aff.iso) | [checksum](https://projectbluefin.dev/dakota-live-20260421-87f2aff.iso-CHECKSUM) |
+| 2026-04-20 | [dakota-live-20260420-87f2aff.iso](https://projectbluefin.dev/dakota-live-20260420-87f2aff.iso) | [checksum](https://projectbluefin.dev/dakota-live-20260420-87f2aff.iso-CHECKSUM) |
 <!-- iso-table-end -->
 
 ## Goals
