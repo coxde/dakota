@@ -61,6 +61,14 @@
   ],
 
   "packageRules": [
+    // ── projectbluefin bootstrap images — always :latest, never pin ──
+    // All ghcr.io/projectbluefin/* images are self-referential; digest-pinning is wrong.
+    // This rule must stay first so it is not overridden by the automerge catch-all below.
+    {
+      "matchDepPatterns": ["^ghcr\.io/projectbluefin/"],
+      "enabled": false
+    },
+
     // ── Auto-merge: all dependency updates managed by this repo config ──
     {
       "automerge": true,

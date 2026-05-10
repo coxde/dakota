@@ -14,6 +14,7 @@ on:
           - all
           - auto-merge
           - manual-merge
+          - core-junctions
           - tarballs
 
 permissions: read-all
@@ -88,15 +89,10 @@ jobs:
             element: bluefin/nautilus-python.bst
             branch: auto/track-nautilus-python
             title: "chore(deps): update nautilus-python"
-          # ── manual-merge: core junctions ──
-          - group: manual-merge
-            element: gnome-build-meta.bst
-            branch: auto/track-gnome-build-meta
-            title: "chore(deps): update gnome-build-meta junction"
-          - group: manual-merge
-            element: freedesktop-sdk.bst
-            branch: auto/track-freedesktop-sdk
-            title: "chore(deps): update freedesktop-sdk junction"
+          # ── manual-merge: non-junction elements ──
+          # Core junctions (freedesktop-sdk + gnome-build-meta) are tracked atomically
+          # by the separate track-core-junctions job. Use group=core-junctions to
+          # trigger that job manually.
           - group: manual-merge
             element: gnomeos-deps/bootc.bst
             branch: auto/track-bootc
@@ -783,3 +779,62 @@ jobs:
             PR_URL=$(gh pr create --base main --head "$BRANCH" --title "$TITLE" --body-file /tmp/pr-body.md)
           fi
           echo "PR: $PR_URL"
+
+  # ── Atomic co-tracking of core junctions ──────────────────────────────────
+  # freedesktop-sdk.bst overrides reference gnome-build-meta.bst elements directly.
+  # Both must land in one commit. No auto-merge — requires human review.
+  track-core-junctions:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    if: >-
+      github.event.inputs.group == 'all' ||
+      github.event.inputs.group == 'core-junctions' ||
+      github.event_name == 'schedule'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Just
+        uses: taiki-e/install-action@ec28e287910af896fd98e04056d31fa68607e7ad # v2
+        with:
+          tool: just
+
+      - name: Pull BuildStream container image
+        run: podman pull "$BST2_IMAGE"
+
+      - name: Track both core junctions
+        run: |
+          just bst --no-interactive source track gnome-build-meta.bst
+          just bst --no-interactive source track freedesktop-sdk.bst
+
+      - name: Create or update PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git diff --quiet && { echo "No junction updates"; exit 0; }
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout -B auto/track-core-junctions origin/main
+          git add elements/gnome-build-meta.bst elements/freedesktop-sdk.bst
+          git commit -m "chore(deps): update core junctions (gnome-build-meta + freedesktop-sdk)"
+          git push --force-with-lease origin auto/track-core-junctions
+
+          EXISTING=$(gh pr list --head auto/track-core-junctions --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$EXISTING" ]; then
+            PR_URL=$(gh pr view "$EXISTING" --json url --jq '.url')
+            echo "Existing PR: $PR_URL"
+          else
+            PR_URL=$(gh pr create \
+              --base main \
+              --head auto/track-core-junctions \
+              --title "chore(deps): update core junctions (gnome-build-meta + freedesktop-sdk)" \
+              --body "Updates \`gnome-build-meta.bst\` and \`freedesktop-sdk.bst\` atomically. Manual review required — junction bumps can break downstream elements.")
+            echo "PR: $PR_URL"
+          fi
