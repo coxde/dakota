@@ -122,7 +122,7 @@ jobs:
           fi
 
       - name: Setup Just
-        uses: taiki-e/install-action@3fa6878dc4ae603f73960271565a082bf196ab96 # v2
+        uses: taiki-e/install-action@ec28e287910af896fd98e04056d31fa68607e7ad # v2
         with:
           tool: just
 
@@ -278,7 +278,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Just
-        uses: taiki-e/install-action@3fa6878dc4ae603f73960271565a082bf196ab96 # v2
+        uses: taiki-e/install-action@ec28e287910af896fd98e04056d31fa68607e7ad # v2
         with:
           tool: just
 
