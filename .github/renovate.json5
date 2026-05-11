@@ -1,95 +1,73 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:best-practices"
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:best-practices',
   ],
-
-  // Use GitHub-native automerge (merge queue/auto-merge).
-  // Renovate marks eligible PRs for automerge; branch rules decide final merge.
-  "automerge": true,
-  "automergeType": "pr",
-  "platformAutomerge": true,
-
-  // Don't rebase PRs when main changes -- reduces churn
-  "rebaseWhen": "conflicted",
-
-  "customManagers": [
-    // ── bst2 container image in CI workflows and Justfile ──
-    // Matches: BST2_IMAGE: registry.../bst2:<sha>  (YAML env in workflows)
-    // Matches: bst2_image := env("BST2_IMAGE", "registry.../bst2:<sha>")  (Justfile)
+  automerge: true,
+  automergeType: 'pr',
+  platformAutomerge: true,
+  rebaseWhen: 'conflicted',
+  customManagers: [
     {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/\\.github/workflows/build\\.yml$/",
-        "/\\.github/workflows/track-bst-sources\\.yml$/",
-        "/^Justfile$/"
+      customType: 'regex',
+      managerFilePatterns: [
+        '/\\.github/workflows/build\\.yml$/',
+        '/\\.github/workflows/track-bst-sources\\.yml$/',
+        '/^Justfile$/',
       ],
-      "matchStrings": [
-        "(?:BST2_IMAGE[\":]\\s*|bst2_image\\s*:=\\s*env\\(\"BST2_IMAGE\",\\s*\")(?<depName>registry\\.gitlab\\.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2):(?<currentValue>[a-f0-9]+)\"?"
+      matchStrings: [
+        '(?:BST2_IMAGE[":]\\s*|bst2_image\\s*:=\\s*env\\("BST2_IMAGE",\\s*")(?<depName>registry\\.gitlab\\.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2):(?<currentValue>[a-f0-9]+)"?',
       ],
-      "datasourceTemplate": "docker",
-      "versioningTemplate": "loose"
+      datasourceTemplate: 'docker',
+      versioningTemplate: 'loose',
     },
-
-    // ── BuildStream plugin tarballs from PyPI ──
-    // Matches: url: pypi:<hash-path>/buildstream-plugins-<version>.tar.gz
-    //          ref: <sha256>
     {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/elements/plugins/.*\\.bst$/"
+      customType: 'regex',
+      managerFilePatterns: [
+        '/elements/plugins/.*\\.bst$/',
       ],
-      "matchStrings": [
-        "url:\\s*pypi:[a-f0-9/]+/(?<depName>buildstream[-_]plugins(?:[-_]community)?)-(?<currentValue>\\d+\\.\\d+\\.\\d+)\\.tar\\.gz\\n\\s+ref:\\s*(?<currentDigest>[a-f0-9]{64})"
+      matchStrings: [
+        'url:\\s*pypi:[a-f0-9/]+/(?<depName>buildstream[-_]plugins(?:[-_]community)?)-(?<currentValue>\\d+\\.\\d+\\.\\d+)\\.tar\\.gz\\n\\s+ref:\\s*(?<currentDigest>[a-f0-9]{64})',
       ],
-      "datasourceTemplate": "pypi",
-      "versioningTemplate": "pep440"
+      datasourceTemplate: 'pypi',
+      versioningTemplate: 'pep440',
     },
-
-    // ── chunkah container image in Justfile ──
-    // Matches: CHUNKAH_REF="quay.io/coreos/chunkah:<tag>@sha256:<digest>"
     {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/^Justfile$/"
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^Justfile$/',
       ],
-      "matchStrings": [
-        "CHUNKAH_REF=\"(?<depName>quay\\.io/coreos/chunkah):(?<currentValue>v[^@]+)@(?<currentDigest>sha256:[a-f0-9]{64})\""
+      matchStrings: [
+        'CHUNKAH_REF="(?<depName>quay\\.io/coreos/chunkah):(?<currentValue>v[^@]+)@(?<currentDigest>sha256:[a-f0-9]{64})"',
       ],
-      "datasourceTemplate": "docker",
-    }
+      datasourceTemplate: 'docker',
+    },
   ],
-
-  "packageRules": [
-    // ── projectbluefin bootstrap images — always :latest, never pin ──
-    // All ghcr.io/projectbluefin/* images are self-referential; digest-pinning is wrong.
-    // This rule must stay first so it is not overridden by the automerge catch-all below.
+  packageRules: [
     {
-      "matchDepPatterns": ["^ghcr\.io/projectbluefin/"],
-      "enabled": false
+      enabled: false,
+      matchDepNames: [
+        '/^ghcr.io/projectbluefin//',
+      ],
     },
-
-    // ── Auto-merge: all dependency updates managed by this repo config ──
     {
-      "automerge": true,
-      "matchManagers": [
-        "github-actions",
-        "custom.regex"
-      ]
+      automerge: true,
+      matchManagers: [
+        'github-actions',
+        'custom.regex',
+      ],
     },
-
-    // ── Group: all GitHub Actions together ──
     {
-      "groupName": "GitHub Actions",
-      "matchManagers": ["github-actions"]
+      groupName: 'GitHub Actions',
+      matchManagers: [
+        'github-actions',
+      ],
     },
-
-    // ── bst2 image: group workflow + Justfile updates ──
     {
-      "groupName": "bst2 container image",
-      "matchDepNames": [
-        "registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2"
-      ]
-    }
-  ]
+      groupName: 'bst2 container image',
+      matchDepNames: [
+        'registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2',
+      ],
+    },
+  ],
 }
