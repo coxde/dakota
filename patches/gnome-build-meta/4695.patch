@@ -1,0 +1,200 @@
+From 2825ceacc990dcf6b07e61acce7bb0a19c0ecbf9 Mon Sep 17 00:00:00 2001
+From: Jordan Petridis <jpetridis@gnome.org>
+Date: Wed, 6 May 2026 15:18:09 +0300
+Subject: [PATCH 1/3] gnomeos-deps/kyotocabinet: Disable march=native in
+ configure
+
+This patch comes from debian, and disables the problematic march=native
+along with the aggressive m64 setting.
+
+https://sources.debian.org/patches/kyotocabinet/1.2.80-2/configure-disable-march-native-agressive-m64.patch/
+
+Close GNOME/gnome-build-meta#1262
+
+Part-of: <https://gitlab.gnome.org/GNOME/gnome-build-meta/-/merge_requests/4695>
+---
+ elements/gnomeos-deps/kyotocabinet.bst        |  5 ++
+ ...e-disable-march-native-agressive-m64.patch | 78 +++++++++++++++++++
+ 2 files changed, 83 insertions(+)
+ create mode 100644 patches/kyotocabinet/configure-disable-march-native-agressive-m64.patch
+
+diff --git a/elements/gnomeos-deps/kyotocabinet.bst b/elements/gnomeos-deps/kyotocabinet.bst
+index cb7984aa0a..dc7b8f5162 100644
+--- a/elements/gnomeos-deps/kyotocabinet.bst
++++ b/elements/gnomeos-deps/kyotocabinet.bst
+@@ -3,7 +3,12 @@ sources:
+ - kind: tar
+   url: dbmx:kyotocabinet/pkg/kyotocabinet-1.2.80.tar.gz
+   ref: 4c85d736668d82920bfdbdb92ac3d66b7db1108f09581a769dd9160a02def349
++- kind: patch_queue
++  path: patches/kyotocabinet
+ build-depends:
+ - freedesktop-sdk.bst:public-stacks/buildsystem-autotools.bst
+ depends:
+ - freedesktop-sdk.bst:public-stacks/runtime-minimal.bst
++variables:
++  autogen: >-
++    autoreconf -fvi
+diff --git a/patches/kyotocabinet/configure-disable-march-native-agressive-m64.patch b/patches/kyotocabinet/configure-disable-march-native-agressive-m64.patch
+new file mode 100644
+index 0000000000..e06a3c98f6
+--- /dev/null
++++ b/patches/kyotocabinet/configure-disable-march-native-agressive-m64.patch
+@@ -0,0 +1,78 @@
++From: Shawn Landden <shawnlandden@gmail.com>
++Date: Fri, 8 Jun 2012 00:28:44 -0700
++Subject: configure: disable march native, agressive -m64
++
++Last-Updated: 2023-04-19
++
++disable march=native, don't build 64-bit always when -m64 is available
++---
++ configure    | 22 ----------------------
++ configure.in | 22 ----------------------
++ 2 files changed, 44 deletions(-)
++
++diff --git a/configure b/configure
++index 7926e4b..eaa4448 100755
++--- a/configure
+++++ b/configure
++@@ -4005,28 +4005,6 @@ $as_echo "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
++  esac
++ 
++ 
++-# System-depending optimization
++-printf 'checking for 64-bit availability... '
++-if printf 'int main(void) {return 0;}' | $CC -xc -m64 -o config.tmp - >config.tmp 2>&1
++-then
++-  MYCFLAGS="-m64 $MYCFLAGS"
++-  MYCXXFLAGS="-m64 $MYCXXFLAGS"
++-  printf 'yes\n'
++-else
++-  printf 'no\n'
++-fi
++-if test "$enable_opt" != "no"
++-then
++-  printf 'checking for CPU optimization availability... '
++-  if printf 'int main(void) {return 0;}' | $CC -xc -march=native -o config.tmp - >config.tmp 2>&1
++-  then
++-    MYCFLAGS="-march=native $MYCFLAGS"
++-    MYCXXFLAGS="-march=native $MYCXXFLAGS"
++-    printf 'yes\n'
++-  else
++-    printf 'no\n'
++-  fi
++-fi
++ printf 'checking for useless warnings... '
++ if printf 'int main(void) {return 0;}' | $CC -xc \
++   -Wno-unused-but-set-variable -Wno-unused-but-set-parameter -o config.tmp - >config.tmp 2>&1
++diff --git a/configure.in b/configure.in
++index ede2977..e049f56 100644
++--- a/configure.in
+++++ b/configure.in
++@@ -202,28 +202,6 @@ test -n "$LDFLAGS" && MYLDFLAGS="$LDFLAGS $MYLDFLAGS"
++ # Byte order
++ AC_C_BIGENDIAN(MYCPPFLAGS="$MYCPPFLAGS -D_MYBIGEND")
++ 
++-# System-depending optimization
++-printf 'checking for 64-bit availability... '
++-if printf 'int main(void) {return 0;}' | $CC -xc -m64 -o config.tmp - >config.tmp 2>&1
++-then
++-  MYCFLAGS="-m64 $MYCFLAGS"
++-  MYCXXFLAGS="-m64 $MYCXXFLAGS"
++-  printf 'yes\n'
++-else
++-  printf 'no\n'
++-fi
++-if test "$enable_opt" != "no"
++-then
++-  printf 'checking for CPU optimization availability... '
++-  if printf 'int main(void) {return 0;}' | $CC -xc -march=native -o config.tmp - >config.tmp 2>&1
++-  then
++-    MYCFLAGS="-march=native $MYCFLAGS"
++-    MYCXXFLAGS="-march=native $MYCXXFLAGS"
++-    printf 'yes\n'
++-  else
++-    printf 'no\n'
++-  fi
++-fi
++ printf 'checking for useless warnings... '
++ if printf 'int main(void) {return 0;}' | $CC -xc \
++   -Wno-unused-but-set-variable -Wno-unused-but-set-parameter -o config.tmp - >config.tmp 2>&1
+-- 
+GitLab
+
+
+From 28bb545f8897109729e21018124004a5067d159b Mon Sep 17 00:00:00 2001
+From: Jordan Petridis <jpetridis@gnome.org>
+Date: Wed, 6 May 2026 15:23:09 +0300
+Subject: [PATCH 2/3] gnomeos-deps/kyotocabinet: Enable debug symbols
+
+Remove the hardcoded -g0 from the configure
+
+This patch is also from debian
+
+https://sources.debian.org/patches/kyotocabinet/1.2.80-2/0010-Reenable-debug-symbol.patch/
+
+Part-of: <https://gitlab.gnome.org/GNOME/gnome-build-meta/-/merge_requests/4695>
+---
+ .../0010-Reenable-debug-symbol.patch          | 23 +++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+ create mode 100644 patches/kyotocabinet/0010-Reenable-debug-symbol.patch
+
+diff --git a/patches/kyotocabinet/0010-Reenable-debug-symbol.patch b/patches/kyotocabinet/0010-Reenable-debug-symbol.patch
+new file mode 100644
+index 0000000000..a34ee1681b
+--- /dev/null
++++ b/patches/kyotocabinet/0010-Reenable-debug-symbol.patch
+@@ -0,0 +1,23 @@
++From: Boyuan Yang <byang@debian.org>
++Date: Tue, 20 Jul 2021 15:16:14 -0400
++Subject: Reenable debug symbol
++
++---
++ configure.in | 4 ++--
++ 1 file changed, 2 insertions(+), 2 deletions(-)
++
++diff --git a/configure.in b/configure.in
++index 34c9f1b..4a32912 100644
++--- a/configure.in
+++++ b/configure.in
++@@ -35,8 +35,8 @@ MYDOCUMENTFILES="COPYING FOSSEXCEPTION ChangeLog doc kyotocabinet.idl"
++ MYPCFILES="kyotocabinet.pc"
++ 
++ # Building flags
++-MYCFLAGS="-Wall -ansi -pedantic -fPIC -fsigned-char -g0 -O2"
++-MYCXXFLAGS="-Wall -fPIC -fsigned-char -g0 -O2"
+++MYCFLAGS="-Wall -ansi -pedantic -fPIC -fsigned-char -O2"
+++MYCXXFLAGS="-Wall -fPIC -fsigned-char -O2"
++ MYCPPFLAGS="-I. -I\$(INCLUDEDIR) -I/usr/local/include"
++ MYCPPFLAGS="$MYCPPFLAGS -DNDEBUG -D_GNU_SOURCE=1"
++ MYCPPFLAGS="$MYCPPFLAGS -D_FILE_OFFSET_BITS=64 -D_REENTRANT -D__EXTENSIONS__"
+-- 
+GitLab
+
+
+From d4f87e52481fbfe34d6f8be29ef17c70d158d28e Mon Sep 17 00:00:00 2001
+From: Jordan Petridis <jpetridis@gnome.org>
+Date: Wed, 6 May 2026 15:32:23 +0300
+Subject: [PATCH 3/3] gnomeos-deps/libpinyin: Remove noparallel
+
+This was disabled a couple years ago due to some out of order issues,
+but let's see if we still need this.
+
+Part-of: <https://gitlab.gnome.org/GNOME/gnome-build-meta/-/merge_requests/4695>
+---
+ elements/gnomeos-deps/libpinyin.bst | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/elements/gnomeos-deps/libpinyin.bst b/elements/gnomeos-deps/libpinyin.bst
+index ccd3bd5349..a718cab112 100644
+--- a/elements/gnomeos-deps/libpinyin.bst
++++ b/elements/gnomeos-deps/libpinyin.bst
+@@ -22,4 +22,3 @@ depends:
+ variables:
+   conf-local: >-
+     --with-dbm=KyotoCabinet
+-  notparallel: true
+-- 
+GitLab
+
