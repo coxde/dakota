@@ -1,7 +1,7 @@
-From 784d33a444f1284d23e8b86e2de4d925ad2842f2 Mon Sep 17 00:00:00 2001
+From 5e36dce561c520a0be081ca9da0a70e4911fd7de Mon Sep 17 00:00:00 2001
 From: Jordan Petridis <jpetridis@gnome.org>
 Date: Sat, 2 May 2026 00:59:54 +0300
-Subject: [PATCH] components/frei0r: Disable sse4.1 until it works
+Subject: [PATCH 10/14] components/frei0r: Disable sse4.1 until it works
 
 ---
  elements/components/frei0r.bst | 7 +++++++
