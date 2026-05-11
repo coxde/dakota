@@ -212,10 +212,7 @@ generate-bootable-image variant="default" $base_dir=base_dir $filesystem=filesys
         --bootloader systemd \
         --karg systemd.firstboot=no \
         --karg splash \
-        --karg quiet \
-        --karg console=tty0 \
-        --karg console=ttyS0 \
-        --karg systemd.debug_shell=ttyS1
+        --karg quiet
 
     echo "==> Bootable disk image ready: ${base_dir}/bootable.raw"
     sync
