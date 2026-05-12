@@ -1,17 +1,24 @@
-From 79dd40d3f07f6ebda096f296cdc0ececdf17efb8 Mon Sep 17 00:00:00 2001
+From c49853dd562a06f67bb80fad536723362cfc39ca Mon Sep 17 00:00:00 2001
 From: Ahmed Adan <ahmed.adan@gmail.com>
 Date: Thu, 7 May 2026 20:52:05 -0400
-Subject: [PATCH] linux: Build kernel with x86-64-v3 when option enabled
+Subject: [PATCH 11/14] linux: Build kernel with x86-64-v3 when option enabled
 
 ---
  elements/components/linux.bst | 6 ++++++
  1 file changed, 6 insertions(+)
 
 diff --git a/elements/components/linux.bst b/elements/components/linux.bst
-index 1e1a755..f76f1a0 100644
+index 1e1a75575..f76f1a05d 100644
 --- a/elements/components/linux.bst
 +++ b/elements/components/linux.bst
-@@ -46,6 +46,12 @@ environment:
+@@ -39,20 +39,26 @@ variables:
+       kernel_arch: riscv
+   - target_arch == "loongarch64":
+       kernel_arch: loongarch
+ 
+ environment:
+   ARCH: '%{kernel_arch}'
+   # compile.h has hardcoded timestamp, let's seed it
    KBUILD_BUILD_TIMESTAMP: 'Thu Nov 10 15:00:00 UTC 2011'
    KBUILD_BUILD_USER: 'tomjon'
    MAXJOBS: "%{max-jobs}"
@@ -24,6 +31,13 @@ index 1e1a755..f76f1a0 100644
  
  environment-nocache:
  - MAXJOBS
+ 
+ config:
+   configure-commands:
+   - |
+     # Generate the default kernel config for the target architecture
+     make defconfig
+ 
 -- 
 2.54.0
 

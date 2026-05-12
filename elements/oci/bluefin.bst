@@ -7,9 +7,6 @@ build-depends:
   - gnome-build-meta.bst:core-deps/dconf.bst
   - gnome-build-meta.bst:freedesktop-sdk.bst:vm/prepare-image.bst
   - oci/layers/bluefin-init-scripts.bst
-  - filename: gnome-build-meta.bst:oci/gnomeos/image.bst
-    config:
-      location: /parent
   - filename: oci/layers/bluefin.bst
     config:
       location: /layer
@@ -58,8 +55,6 @@ config:
       images:
       - os: linux
         architecture: "%{go-arch}"
-        parent:
-          image: /parent
         layer: /layer
         comment: "Import Bluefin layer"
         config:

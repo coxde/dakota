@@ -7,7 +7,7 @@ build-depends:
   - gnome-build-meta.bst:core-deps/dconf.bst
   - gnome-build-meta.bst:freedesktop-sdk.bst:vm/prepare-image.bst
   - oci/layers/bluefin-nvidia-init-scripts.bst
-  - filename: gnome-build-meta.bst:oci/gnomeos/image.bst
+  - filename: oci/bluefin.bst
     config:
       location: /parent
   - filename: oci/layers/bluefin-nvidia.bst

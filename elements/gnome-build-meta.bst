@@ -4,7 +4,7 @@ sources:
 - kind: git_repo
   url: gnome:gnome-build-meta.git
   track: gnome-50
-  ref: 50.1-11-gc374cf8b52f648dfbdeadf53f1e842a482846994
+  ref: 50.1-22-gf7d7c6b96daa16b19dc4da6919f1e2121c84dd77
 - kind: patch_queue
   path: patches/gnome-build-meta
 
@@ -30,6 +30,9 @@ config:
 
     # Replace the element so the OCI image generates Bluefin's os-release file
     oci/integration/os-release.bst: oci/os-release.bst
+
+    # Override the signed kernel modules with the plain ones
+    gnomeos/initramfs/signed-modules.bst: bluefin/unsigned-modules.bst
 
     plugins/buildstream-plugins.bst: plugins/buildstream-plugins.bst
     plugins/buildstream-plugins-community.bst: plugins/buildstream-plugins-community.bst

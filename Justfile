@@ -32,11 +32,6 @@ bst *ARGS:
     #!/usr/bin/env bash
     set -euo pipefail
     mkdir -p "${HOME}/.cache/buildstream"
-    # Persist generated source plugin state (snakeoil secureboot keys from
-    # gnome-build-meta's generated.py plugin). Without this mount the keys
-    # regenerate on every container invocation, printing to stdout and
-    # breaking any tool (e.g. buildstream-sbom) that pipes bst show output.
-    mkdir -p "${HOME}/.config/buildstream-generate"
     # BST_FLAGS env var allows CI to inject --no-interactive, --config, etc.
     # Word-splitting is intentional here (flags are space-separated).
     # shellcheck disable=SC2086
@@ -46,7 +41,6 @@ bst *ARGS:
         --network=host \
         -v "{{justfile_directory()}}:/src:rw" \
         -v "${HOME}/.cache/buildstream:/root/.cache/buildstream:rw" \
-        -v "${HOME}/.config/buildstream-generate:/root/.config/buildstream-generate:rw" \
         -w /src \
         "{{bst2_image}}" \
         bash -c 'bst --colors "$@"' -- ${BST_FLAGS:-} {{ARGS}}
@@ -212,10 +206,7 @@ generate-bootable-image variant="default" $base_dir=base_dir $filesystem=filesys
         --bootloader systemd \
         --karg systemd.firstboot=no \
         --karg splash \
-        --karg quiet \
-        --karg console=tty0 \
-        --karg console=ttyS0 \
-        --karg systemd.debug_shell=ttyS1
+        --karg quiet
 
     echo "==> Bootable disk image ready: ${base_dir}/bootable.raw"
     sync
