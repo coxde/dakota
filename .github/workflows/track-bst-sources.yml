@@ -117,6 +117,13 @@ jobs:
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Get mergeraptor token
+        id: app-token
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3
+        with:
+          app-id: ${{ secrets.MERGERAPTOR_APP_ID }}
+          private-key: ${{ secrets.MERGERAPTOR_PRIVATE_KEY }}
+
       - name: Setup Just
         uses: taiki-e/install-action@e1c4cd42111751368541a7cb5db3522bd1f846a4 # v2
         with:
@@ -176,7 +183,7 @@ jobs:
       - name: Create PR
         if: steps.gate.outputs.run == 'true' && steps.changes.outputs.has_changes == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           BRANCH="${{ matrix.branch }}"
           BASE_TITLE="${{ matrix.title }}"
@@ -267,6 +274,13 @@ jobs:
       github.event.inputs.group == 'tarballs' ||
       github.event_name == 'schedule'
     steps:
+      - name: Get mergeraptor token
+        id: app-token
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3
+        with:
+          app-id: ${{ secrets.MERGERAPTOR_APP_ID }}
+          private-key: ${{ secrets.MERGERAPTOR_PRIVATE_KEY }}
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -286,7 +300,7 @@ jobs:
       - name: Update brew-tarball
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           LATEST_VERSION=$(gh api repos/ublue-os/brew/releases --jq '.[0].tag_name // empty' 2>/dev/null | sed 's/^v//' || true)
           if [ -z "$LATEST_VERSION" ]; then
@@ -349,7 +363,7 @@ jobs:
       - name: Update wallpapers
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           WALL_RELEASE=$(gh api repos/ublue-os/artwork/releases \
             --jq '[.[] | select(.tag_name | startswith("bluefin-"))][0].tag_name // empty')
@@ -407,7 +421,7 @@ jobs:
       - name: Update fzf
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           LATEST_VERSION=$(gh api repos/junegunn/fzf/releases/latest --jq '.tag_name' | sed 's/^v//')
           echo "Latest fzf version: $LATEST_VERSION"
@@ -461,7 +475,7 @@ jobs:
       - name: Update glow
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           LATEST_VERSION=$(gh api repos/charmbracelet/glow/releases/latest --jq '.tag_name' | sed 's/^v//')
           echo "Latest glow version: $LATEST_VERSION"
@@ -515,7 +529,7 @@ jobs:
       - name: Update gum
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           LATEST_VERSION=$(gh api repos/charmbracelet/gum/releases/latest --jq '.tag_name' | sed 's/^v//')
           echo "Latest gum version: $LATEST_VERSION"
@@ -569,7 +583,7 @@ jobs:
       - name: Update gtk4-layer-shell
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           LATEST_VERSION=$(gh api repos/wmww/gtk4-layer-shell/releases/latest --jq '.tag_name' | sed 's/^v//')
           echo "Latest gtk4-layer-shell version: $LATEST_VERSION"
@@ -622,7 +636,7 @@ jobs:
       - name: Update tailscale
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           LATEST_VERSION=$(gh api repos/tailscale/tailscale/releases/latest --jq '.tag_name' | sed 's/^v//')
           echo "Latest tailscale version: $LATEST_VERSION"
@@ -676,7 +690,7 @@ jobs:
       - name: Update uupd
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           LATEST_VERSION=$(gh api repos/ublue-os/uupd/releases/latest --jq '.tag_name')
           echo "Latest uupd version: $LATEST_VERSION"
@@ -730,7 +744,7 @@ jobs:
       - name: Update jetbrains-mono-nerd-font
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           LATEST_VERSION=$(gh api repos/ryanoasis/nerd-fonts/releases/latest --jq '.tag_name')
           echo "Latest nerd-fonts version: $LATEST_VERSION"
@@ -793,6 +807,13 @@ jobs:
       github.event.inputs.group == 'core-junctions' ||
       github.event_name == 'schedule'
     steps:
+      - name: Get mergeraptor token
+        id: app-token
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3
+        with:
+          app-id: ${{ secrets.MERGERAPTOR_APP_ID }}
+          private-key: ${{ secrets.MERGERAPTOR_PRIVATE_KEY }}
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -814,7 +835,7 @@ jobs:
 
       - name: Create or update PR
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           git diff --quiet && { echo "No junction updates"; exit 0; }
 
