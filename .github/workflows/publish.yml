@@ -5,6 +5,9 @@ on:
   workflow_run:
     workflows: ["Build Bluefin dakota"]
     types: [completed]
+    branches:
+      - main
+      - 'gh-readonly-queue/main/**'
 
 env:
   IMAGE_NAME: dakota
