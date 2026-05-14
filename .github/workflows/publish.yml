@@ -18,7 +18,8 @@ concurrency:
 
 jobs:
   publish:
-    runs-on: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'schedule') && 'ubuntu-24.04' || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
     # Variant matrix: default and NVIDIA publish in parallel from the shared
     # BST artifact cache. NVIDIA is `continue-on-error: true` so its failure
     # does not block default publication.
