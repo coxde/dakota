@@ -23,13 +23,13 @@ env:
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 # Concurrency: per-ref isolation for all events.
-# - PRs: each PR gets its own slot (validate job only — no AX102-U usage).
-#   cancel-in-progress: true on the validate job cancels stale runs on push.
-# - merge_group / schedule / dispatch: per-ref queuing, never cancelled, so
-#   every build that enters the merge queue completes its check.
+# - PRs: cancel-in-progress: true drops stale validate runs when a new
+#   push arrives. Safe for other events — merge_group/schedule/dispatch
+#   each use distinct refs and are unaffected by this flag.
+# - merge_group / schedule / dispatch: per-ref queuing, never cancelled.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # ── Fast PR validation ───────────────────────────────────────────────────
@@ -92,6 +92,7 @@ jobs:
   build:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
+    timeout-minutes: 360
     # Both variants build in parallel. NVIDIA is continue-on-error so its
     # failure does not block the default image's merge or publication.
     strategy:
@@ -284,14 +285,13 @@ jobs:
           BST_FLAGS: -o x86_64_v3 true --no-interactive --config /src/buildstream-ci.conf
         run: |
           just bst build ${{ matrix.element }}
-        timeout-minutes: 420
+        timeout-minutes: 330
 
       # Push the built artifact to the remote CAS so the export job can pull it.
       # Remote execution may populate the artifact cache implicitly, but an
       # explicit push guarantees the artifact is there regardless of BST internals.
       # Push both variants so publish.yml can fetch each from CAS.
       - name: Push OCI artifact to remote CAS
-        if: github.event_name != 'pull_request'
         env:
           BST_FLAGS: -o x86_64_v3 true --no-interactive --config /src/buildstream-ci.conf
         run: |
