@@ -42,11 +42,11 @@ config:
     cp -r system_files/shared/etc/./ "%{install-root}%{sysconfdir}/"
     cp -r bluefin-branding/system_files/etc/./ "%{install-root}%{sysconfdir}/"
 
-    # Disable Bluefin shell MOTD by default.
-    ENV_FILE="%{install-root}%{sysconfdir}/environment"
-    touch "${ENV_FILE}"
-    sed -i '/^BLUEFIN_SHELL_ENABLE_MOTD=/d' "${ENV_FILE}"
-    printf 'BLUEFIN_SHELL_ENABLE_MOTD=0\n' >> "${ENV_FILE}"
+    # Default Bluefin shell MOTD to disabled, while allowing user overrides.
+    install -Dm644 /dev/stdin "%{install-root}%{sysconfdir}/profile.d/bluefin-shell-defaults.sh" <<'EOF'
+    : "${BLUEFIN_SHELL_ENABLE_MOTD:=0}"
+    export BLUEFIN_SHELL_ENABLE_MOTD
+    EOF
 
     # Generate ujust completions to match the upstream common image.
     install -d \
