@@ -42,6 +42,12 @@ config:
     cp -r system_files/shared/etc/./ "%{install-root}%{sysconfdir}/"
     cp -r bluefin-branding/system_files/etc/./ "%{install-root}%{sysconfdir}/"
 
+    # Disable Bluefin shell MOTD by default.
+    ENV_FILE="%{install-root}%{sysconfdir}/environment"
+    touch "${ENV_FILE}"
+    sed -i '/^BLUEFIN_SHELL_ENABLE_MOTD=/d' "${ENV_FILE}"
+    printf 'BLUEFIN_SHELL_ENABLE_MOTD=0\n' >> "${ENV_FILE}"
+
     # Generate ujust completions to match the upstream common image.
     install -d \
       "%{install-root}%{datadir}/bash-completion/completions" \
