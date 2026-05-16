@@ -376,12 +376,66 @@ def build_release_notes(
         diff_line = "First automated release — no previous baseline."
 
     # Notable versions table
-    rows = "\n".join(
+    notable_rows = "\n".join(
         f"| {p['name']} | `{p['version']}`"
         + (f" | `{p['prev']}` → `{p['version']}`" if p.get("changed") and p.get("prev") else " | —")
         + " |"
         for p in versions["notable"]
     )
+
+    # Full diff sections — only when we have a previous baseline
+    full_diff_section: list[str] = []
+    if has_prev:
+        # Updated
+        if diff["changed"]:
+            changed_rows = "\n".join(
+                f"| {c['name']} | `{c['prev']}` | `{c['curr']}` |"
+                for c in diff["changed"]
+            )
+            full_diff_section += [
+                f"<details><summary>↑ {diff['changed_count']} updated packages</summary>",
+                "",
+                "| Package | From | To |",
+                "|---|---|---|",
+                *changed_rows.splitlines(),
+                "",
+                "</details>",
+                "",
+            ]
+        # Added
+        if diff["added"]:
+            added_rows = "\n".join(
+                f"| {a['name']} | `{a['version']}` |"
+                for a in diff["added"]
+            )
+            full_diff_section += [
+                f"<details><summary>+ {diff['added_count']} added packages</summary>",
+                "",
+                "| Package | Version |",
+                "|---|---|",
+                *added_rows.splitlines(),
+                "",
+                "</details>",
+                "",
+            ]
+        # Removed
+        if diff["removed"]:
+            removed_rows = "\n".join(
+                f"| {r['name']} | `{r['version']}` |"
+                for r in diff["removed"]
+            )
+            full_diff_section += [
+                f"<details><summary>− {diff['removed_count']} removed packages</summary>",
+                "",
+                "| Package | Last version |",
+                "|---|---|",
+                *removed_rows.splitlines(),
+                "",
+                "</details>",
+                "",
+            ]
+        if not full_diff_section:
+            full_diff_section = ["No package changes since last release.", ""]
 
     # Build lines with no leading whitespace — 4-space indent renders as code in GitHub MD
     L = [
@@ -393,8 +447,9 @@ def build_release_notes(
         "",
         "| Component | Version | Change |",
         "|---|---|---|",
-        *rows.splitlines(),
+        *notable_rows.splitlines(),
         "",
+        *((["## All package changes", ""] + full_diff_section) if has_prev else []),
         "## Images",
         "",
         "```",
